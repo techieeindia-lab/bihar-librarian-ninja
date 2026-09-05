@@ -4,13 +4,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  StyleProp,
-  ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Question, Language } from '../types';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme, difficultyColorMap, categoryColorMap } from '../theme';
 
 interface QuestionCardProps {
   question: Question;
@@ -38,6 +36,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   onToggleMarkForReview,
 }) => {
   const { language: globalLanguage, t } = useLanguage();
+  const { colors, isDark } = useTheme();
   // Allow per-question language toggle
   const [localLang, setLocalLang] = useState<Language>(globalLanguage);
 
@@ -47,22 +46,77 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   const optionKeys: ('A' | 'B' | 'C' | 'D')[] = ['A', 'B', 'C', 'D'];
 
+  const diffKey = question.difficulty || 'medium';
+  const diffConfig = difficultyColorMap[diffKey];
+  const catColor = categoryColorMap[question.category] || colors.accent;
+
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+      ]}
+    >
       {/* Top Meta Bar */}
       <View style={styles.metaRow}>
         <View style={styles.metaLeft}>
           {questionNumber !== undefined && (
-            <View style={styles.numberBadge}>
-              <Text style={styles.numberText}>
+            <View
+              style={[
+                styles.numberBadge,
+                {
+                  backgroundColor: colors.canvasSubtle,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.numberText, { color: colors.textPrimary }]}>
                 {t.questions} {questionNumber}
                 {totalQuestions ? ` / ${totalQuestions}` : ''}
               </Text>
             </View>
           )}
+
+          {/* Difficulty Badge */}
+          <View
+            style={[
+              styles.diffBadge,
+              {
+                backgroundColor: isDark
+                  ? `${diffConfig.color}22`
+                  : `${diffConfig.color}15`,
+                borderColor: `${diffConfig.color}55`,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.diffDot,
+                { backgroundColor: diffConfig.color },
+              ]}
+            />
+            <Text style={[styles.diffText, { color: diffConfig.color }]}>
+              {localLang === 'hi' ? diffConfig.labelHi : diffConfig.label}
+            </Text>
+          </View>
+
+          {/* Source Exam Tag */}
           {question.sourceExam && (
-            <View style={styles.sourceBadge}>
-              <Text style={styles.sourceText}>{question.sourceExam}</Text>
+            <View
+              style={[
+                styles.sourceBadge,
+                {
+                  backgroundColor: isDark ? 'rgba(245, 166, 35, 0.15)' : '#FFFBEB',
+                  borderColor: isDark ? 'rgba(245, 166, 35, 0.3)' : '#FDE68A',
+                },
+              ]}
+            >
+              <Text style={[styles.sourceText, { color: isDark ? colors.amber : '#B45309' }]}>
+                {question.sourceExam}
+              </Text>
             </View>
           )}
         </View>
@@ -71,11 +125,17 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           {/* Quick Translate Button for this Question */}
           <TouchableOpacity
             onPress={toggleLocalLang}
-            style={styles.langToggleBtn}
+            style={[
+              styles.langToggleBtn,
+              {
+                backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF',
+                borderColor: isDark ? 'rgba(0, 112, 243, 0.3)' : '#BFDBFE',
+              },
+            ]}
             activeOpacity={0.7}
           >
-            <Ionicons name="language" size={14} color="#1E3A8A" />
-            <Text style={styles.langToggleText}>
+            <Ionicons name="language" size={13} color={colors.accent} />
+            <Text style={[styles.langToggleText, { color: colors.accent }]}>
               {localLang === 'hi' ? 'EN' : 'हिन्दी'}
             </Text>
           </TouchableOpacity>
@@ -86,14 +146,21 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               onPress={onToggleMarkForReview}
               style={[
                 styles.iconBtn,
-                isMarkedForReview && styles.markedForReviewBtn,
+                {
+                  backgroundColor: isMarkedForReview
+                    ? colors.warningSoft
+                    : colors.canvasSubtle,
+                  borderColor: isMarkedForReview
+                    ? colors.warningBorder
+                    : colors.border,
+                },
               ]}
               activeOpacity={0.7}
             >
               <Ionicons
                 name={isMarkedForReview ? 'flag' : 'flag-outline'}
                 size={16}
-                color={isMarkedForReview ? '#D97706' : '#64748B'}
+                color={isMarkedForReview ? colors.warning : colors.textMuted}
               />
             </TouchableOpacity>
           )}
@@ -102,13 +169,23 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           {onToggleBookmark && (
             <TouchableOpacity
               onPress={onToggleBookmark}
-              style={[styles.iconBtn, isBookmarked && styles.bookmarkedBtn]}
+              style={[
+                styles.iconBtn,
+                {
+                  backgroundColor: isBookmarked
+                    ? colors.accentSoft
+                    : colors.canvasSubtle,
+                  borderColor: isBookmarked
+                    ? colors.accentBorder
+                    : colors.border,
+                },
+              ]}
               activeOpacity={0.7}
             >
               <Ionicons
                 name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
                 size={16}
-                color={isBookmarked ? '#1E3A8A' : '#64748B'}
+                color={isBookmarked ? colors.accent : colors.textMuted}
               />
             </TouchableOpacity>
           )}
@@ -116,7 +193,9 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       </View>
 
       {/* Question Text */}
-      <Text style={styles.questionText}>{question.question[localLang]}</Text>
+      <Text style={[styles.questionText, { color: colors.textPrimary }]}>
+        {question.question[localLang]}
+      </Text>
 
       {/* Options */}
       <View style={styles.optionsContainer}>
@@ -124,42 +203,57 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           const isSelected = selectedOption === key;
           const isCorrect = question.correctAnswer === key;
 
-          let optionStyle: StyleProp<ViewStyle> = styles.optionItem;
-          let textStyle: StyleProp<TextStyle> = styles.optionText;
-          let badgeStyle: StyleProp<ViewStyle> = styles.optionBadge;
-          let badgeTextStyle: StyleProp<TextStyle> = styles.optionBadgeText;
+          let optionBg = colors.canvasSubtle;
+          let optionBorder = colors.border;
+          let optionTextColor = colors.textPrimary;
+          let badgeBg = isDark ? '#262626' : '#E4E4E7';
+          let badgeTextColor = colors.textPrimary;
 
           if (showSolution) {
             if (isCorrect) {
-              optionStyle = [styles.optionItem, styles.correctOption];
-              textStyle = [styles.optionText, styles.correctOptionText];
-              badgeStyle = [styles.optionBadge, styles.correctBadge];
-              badgeTextStyle = [styles.optionBadgeText, styles.correctBadgeText];
+              optionBg = isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5';
+              optionBorder = '#10B981';
+              optionTextColor = colors.textPrimary;
+              badgeBg = '#10B981';
+              badgeTextColor = '#FFFFFF';
             } else if (isSelected && !isCorrect) {
-              optionStyle = [styles.optionItem, styles.wrongOption];
-              textStyle = [styles.optionText, styles.wrongOptionText];
-              badgeStyle = [styles.optionBadge, styles.wrongBadge];
-              badgeTextStyle = [styles.optionBadgeText, styles.wrongBadgeText];
+              optionBg = isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2';
+              optionBorder = '#EF4444';
+              optionTextColor = colors.textPrimary;
+              badgeBg = '#EF4444';
+              badgeTextColor = '#FFFFFF';
             }
           } else if (isSelected) {
-            optionStyle = [styles.optionItem, styles.selectedOption];
-            textStyle = [styles.optionText, styles.selectedOptionText];
-            badgeStyle = [styles.optionBadge, styles.selectedBadge];
-            badgeTextStyle = [styles.optionBadgeText, styles.selectedBadgeText];
+            optionBg = isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF';
+            optionBorder = colors.accent;
+            optionTextColor = colors.textPrimary;
+            badgeBg = colors.accent;
+            badgeTextColor = '#FFFFFF';
           }
 
           return (
             <TouchableOpacity
               key={key}
               onPress={() => !showSolution && onSelectOption?.(key)}
-              style={optionStyle}
+              style={[
+                styles.optionItem,
+                {
+                  backgroundColor: optionBg,
+                  borderColor: optionBorder,
+                  borderWidth: isSelected ? 1.5 : 1,
+                },
+              ]}
               activeOpacity={showSolution ? 1 : 0.7}
               disabled={showSolution}
             >
-              <View style={badgeStyle}>
-                <Text style={badgeTextStyle}>{key}</Text>
+              <View style={[styles.optionBadge, { backgroundColor: badgeBg }]}>
+                <Text style={[styles.optionBadgeText, { color: badgeTextColor }]}>
+                  {key}
+                </Text>
               </View>
-              <Text style={textStyle}>{question.options[key][localLang]}</Text>
+              <Text style={[styles.optionText, { color: optionTextColor }]}>
+                {question.options[key][localLang]}
+              </Text>
               {showSolution && isCorrect && (
                 <Ionicons
                   name="checkmark-circle"
@@ -181,18 +275,39 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         })}
       </View>
 
-      {/* Detailed Solution / Explanation (Shown in review mode) */}
+      {/* Detailed Solution / Explanation */}
       {showSolution && (
-        <View style={styles.explanationBox}>
+        <View
+          style={[
+            styles.explanationBox,
+            {
+              backgroundColor: isDark
+                ? 'rgba(245, 158, 11, 0.1)'
+                : '#FFFBEB',
+              borderLeftColor: '#F59E0B',
+              borderColor: isDark ? 'rgba(245, 158, 11, 0.25)' : '#FDE68A',
+            },
+          ]}
+        >
           <View style={styles.explanationHeader}>
-            <Ionicons name="bulb-outline" size={18} color="#D97706" />
-            <Text style={styles.explanationTitle}>
+            <Ionicons name="bulb" size={17} color="#F59E0B" />
+            <Text
+              style={[
+                styles.explanationTitle,
+                { color: isDark ? '#FBBF24' : '#92400E' },
+              ]}
+            >
               {localLang === 'hi'
-                ? `सही उत्तर: विकल्प (${question.correctAnswer}) • व्याख्या`
+                ? `सही उत्तर: विकल्प (${question.correctAnswer}) • विस्तृत समाधान`
                 : `Correct Answer: Option (${question.correctAnswer}) • Explanation`}
             </Text>
           </View>
-          <Text style={styles.explanationText}>
+          <Text
+            style={[
+              styles.explanationText,
+              { color: isDark ? colors.textPrimary : '#78350F' },
+            ]}
+          >
             {question.explanation[localLang]}
           </Text>
         </View>
@@ -203,16 +318,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginVertical: 8,
+    marginVertical: 6,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     elevation: 2,
-    shadowColor: '#0F172A',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
   },
   metaRow: {
@@ -227,151 +340,113 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
   metaRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   numberBadge: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
   },
   numberText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#1E3A8A',
+  },
+  diffBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 4,
+  },
+  diffDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  diffText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   sourceBadge: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
   },
   sourceText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '700',
   },
   langToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEF2FF',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    borderRadius: 8,
+    gap: 3,
+    borderWidth: 1,
   },
   langToggleText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#1E3A8A',
+    fontWeight: '800',
   },
   iconBtn: {
     padding: 6,
     borderRadius: 8,
-    backgroundColor: '#F8FAFC',
-  },
-  markedForReviewBtn: {
-    backgroundColor: '#FEF3C7',
-  },
-  bookmarkedBtn: {
-    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
   },
   questionText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
-    lineHeight: 24,
-    marginBottom: 16,
+    lineHeight: 23,
+    marginBottom: 14,
+    letterSpacing: -0.2,
   },
   optionsContainer: {
-    gap: 10,
+    gap: 9,
   },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 12,
-  },
-  selectedOption: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#2563EB',
-  },
-  correctOption: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#10B981',
-  },
-  wrongOption: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#EF4444',
+    borderRadius: 10,
+    padding: 11,
   },
   optionBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E2E8F0',
+    width: 26,
+    height: 26,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  selectedBadge: {
-    backgroundColor: '#2563EB',
-  },
-  correctBadge: {
-    backgroundColor: '#10B981',
-  },
-  wrongBadge: {
-    backgroundColor: '#EF4444',
+    marginRight: 10,
   },
   optionBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#334155',
-  },
-  selectedBadgeText: {
-    color: '#FFFFFF',
-  },
-  correctBadgeText: {
-    color: '#FFFFFF',
-  },
-  wrongBadgeText: {
-    color: '#FFFFFF',
   },
   optionText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#1E293B',
-    lineHeight: 20,
-  },
-  selectedOptionText: {
-    fontWeight: '700',
-    color: '#1E3A8A',
-  },
-  correctOptionText: {
-    fontWeight: '700',
-    color: '#065F46',
-  },
-  wrongOptionText: {
-    fontWeight: '700',
-    color: '#991B1B',
+    lineHeight: 19,
   },
   solutionIcon: {
-    marginLeft: 8,
+    marginLeft: 6,
   },
   explanationBox: {
-    marginTop: 16,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
-    padding: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: '#D97706',
+    marginTop: 14,
+    borderRadius: 10,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderWidth: 1,
   },
   explanationHeader: {
     flexDirection: 'row',
@@ -380,14 +455,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   explanationTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#92400E',
   },
   explanationText: {
     fontSize: 13,
-    color: '#78350F',
     lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: '400',
   },
 });

@@ -7,11 +7,14 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme } from '../theme';
 import { FLASHCARDS } from '../data/flashcards';
 
 export const FlashcardsScreen: React.FC = () => {
   const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
@@ -37,11 +40,16 @@ export const FlashcardsScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.canvas }]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Screen Title */}
       <View style={styles.headerBox}>
-        <Text style={styles.screenTitle}>{t.flashcardsTitle}</Text>
-        <Text style={styles.screenSubtitle}>
+        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>
+          {t.flashcardsTitle}
+        </Text>
+        <Text style={[styles.screenSubtitle, { color: colors.textSecondary }]}>
           {language === 'hi'
             ? 'महत्वपूर्ण वर्ष, नियम, वर्गीकरण कोड एवं तथ्यों का सुपर-फास्ट पुनरावलोकन'
             : 'Rapid revision cards for key years, founders, DDC classes, and exam facts'}
@@ -50,54 +58,104 @@ export const FlashcardsScreen: React.FC = () => {
 
       {/* Card Counter & Category Badge */}
       <View style={styles.metaRow}>
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>
+        <View
+          style={[
+            styles.categoryBadge,
+            {
+              backgroundColor: isDark
+                ? 'rgba(0, 112, 243, 0.15)'
+                : '#EFF6FF',
+              borderColor: isDark
+                ? 'rgba(0, 112, 243, 0.35)'
+                : '#BFDBFE',
+            },
+          ]}
+        >
+          <Ionicons name="sparkles" size={13} color={colors.accent} />
+          <Text style={[styles.categoryText, { color: colors.accent }]}>
             {currentCard.category[language]}
           </Text>
         </View>
 
-        <Text style={styles.counterText}>
-          {currentIndex + 1} / {FLASHCARDS.length}
-        </Text>
+        <View
+          style={[
+            styles.counterBadge,
+            {
+              backgroundColor: colors.canvasSubtle,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[styles.counterText, { color: colors.textSecondary }]}>
+            {currentIndex + 1} / {FLASHCARDS.length}
+          </Text>
+        </View>
       </View>
 
       {/* Main Flashcard */}
       <TouchableOpacity
-        style={[styles.flashcard, isRevealed && styles.flashcardRevealed]}
+        style={[
+          styles.flashcard,
+          {
+            backgroundColor: isRevealed
+              ? isDark
+                ? 'rgba(16, 185, 129, 0.08)'
+                : '#F0FDF4'
+              : colors.card,
+            borderColor: isRevealed
+              ? '#10B981'
+              : colors.border,
+            borderTopWidth: 3,
+            borderTopColor: isRevealed ? '#10B981' : colors.accent,
+          },
+        ]}
         onPress={() => setIsRevealed(!isRevealed)}
         activeOpacity={0.9}
       >
         <View style={styles.cardTopHint}>
           <Ionicons
             name={isRevealed ? 'checkmark-circle' : 'finger-print'}
-            size={18}
-            color={isRevealed ? '#10B981' : '#64748B'}
+            size={16}
+            color={isRevealed ? '#10B981' : colors.textMuted}
           />
-          <Text style={styles.cardTopHintText}>
+          <Text
+            style={[
+              styles.cardTopHintText,
+              { color: isRevealed ? '#10B981' : colors.textMuted },
+            ]}
+          >
             {isRevealed
               ? language === 'hi'
-                ? 'उत्तर'
-                : 'ANSWER'
+                ? 'सही उत्तर (ANSWER)'
+                : 'ANSWER REVEALED'
               : t.tapToReveal}
           </Text>
         </View>
 
         {/* Front Question */}
-        <Text style={styles.frontText}>
+        <Text style={[styles.frontText, { color: colors.textPrimary }]}>
           {currentCard.front[language]}
         </Text>
 
         {/* Back Answer (Revealed) */}
         {isRevealed ? (
           <View style={styles.answerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.backText}>
+            <View style={[styles.divider, { backgroundColor: isDark ? '#262626' : '#E2E8F0' }]} />
+            <Text style={[styles.backText, { color: isDark ? '#34D399' : '#065F46' }]}>
               {currentCard.back[language]}
             </Text>
             {currentCard.subtext && (
-              <View style={styles.subtextBox}>
-                <Ionicons name="information-circle" size={16} color="#1E3A8A" />
-                <Text style={styles.subtext}>
+              <View
+                style={[
+                  styles.subtextBox,
+                  {
+                    backgroundColor: isDark ? 'rgba(0, 112, 243, 0.12)' : '#EFF6FF',
+                    borderColor: isDark ? 'rgba(0, 112, 243, 0.3)' : '#BFDBFE',
+                  },
+                ]}
+              >
+                <Ionicons name="information-circle" size={15} color={colors.accent} />
+                <Text style={[styles.subtext, { color: isDark ? '#93C5FD' : '#1E3A8A' }]}>
                   {currentCard.subtext[language]}
                 </Text>
               </View>
@@ -105,8 +163,10 @@ export const FlashcardsScreen: React.FC = () => {
           </View>
         ) : (
           <View style={styles.tapPromptBox}>
-            <Ionicons name="eye-outline" size={20} color="#94A3B8" />
-            <Text style={styles.tapPromptText}>{t.tapToReveal}</Text>
+            <Ionicons name="eye-outline" size={18} color={colors.accent} />
+            <Text style={[styles.tapPromptText, { color: colors.accent }]}>
+              {t.tapToReveal}
+            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -114,35 +174,57 @@ export const FlashcardsScreen: React.FC = () => {
       {/* Navigation Controls */}
       <View style={styles.controlsRow}>
         <TouchableOpacity
-          style={[styles.controlBtn, currentIndex === 0 && styles.disabledControlBtn]}
+          style={[
+            styles.controlBtn,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+            currentIndex === 0 && styles.disabledControlBtn,
+          ]}
           onPress={handlePrev}
           disabled={currentIndex === 0}
+          activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={18} color="#1E3A8A" />
-          <Text style={styles.controlBtnText}>{t.prevCard}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.resetBtn}
-          onPress={handleReset}
-        >
-          <Ionicons name="refresh" size={18} color="#64748B" />
+          <Ionicons name="arrow-back" size={16} color={colors.textPrimary} />
+          <Text style={[styles.controlBtnText, { color: colors.textPrimary }]}>
+            {t.prevCard}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
-            styles.controlBtnPrimary,
-            currentIndex === FLASHCARDS.length - 1 && styles.disabledControlBtn,
+            styles.resetBtn,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
           ]}
+          onPress={handleReset}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="refresh" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handleNext}
           disabled={currentIndex === FLASHCARDS.length - 1}
+          activeOpacity={0.85}
+          style={[currentIndex === FLASHCARDS.length - 1 && styles.disabledControlBtn, { flex: 1 }]}
         >
-          <Text style={styles.controlBtnPrimaryText}>{t.nextCard}</Text>
-          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+          <LinearGradient
+            colors={['#0070F3', '#7928CA']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.controlBtnPrimary}
+          >
+            <Text style={styles.controlBtnPrimaryText}>{t.nextCard}</Text>
+            <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
-      <View style={{ height: 32 }} />
+      <View style={{ height: 36 }} />
     </ScrollView>
   );
 };
@@ -150,89 +232,84 @@ export const FlashcardsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
   },
   headerBox: {
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: 14,
+    marginBottom: 10,
   },
   screenTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
+    letterSpacing: -0.4,
   },
   screenSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 4,
-    lineHeight: 18,
+    fontSize: 12,
+    marginTop: 3,
+    lineHeight: 17,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 10,
   },
   categoryBadge: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#DBEAFE',
+    gap: 5,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#1E3A8A',
+  },
+  counterBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   counterText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#64748B',
   },
   flashcard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 24,
-    minHeight: 280,
+    borderRadius: 16,
+    padding: 22,
+    minHeight: 270,
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    elevation: 4,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
+    borderWidth: 1,
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  flashcardRevealed: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
+    shadowRadius: 6,
   },
   cardTopHint: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   cardTopHintText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    color: '#64748B',
     letterSpacing: 0.5,
   },
   frontText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
-    lineHeight: 26,
+    lineHeight: 25,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   divider: {
-    height: 1.5,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 18,
+    height: 1,
+    marginVertical: 16,
     width: '100%',
   },
   answerContainer: {
@@ -240,25 +317,23 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   backText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#065F46',
-    lineHeight: 24,
+    lineHeight: 23,
     textAlign: 'center',
   },
   subtextBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    gap: 6,
-    marginTop: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 5,
+    marginTop: 12,
   },
   subtext: {
-    fontSize: 12,
-    color: '#1E3A8A',
+    fontSize: 11,
     fontWeight: '600',
   },
   tapPromptBox: {
@@ -266,60 +341,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 24,
+    marginTop: 20,
   },
   tapPromptText: {
     fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '700',
+    fontWeight: '800',
   },
   controlsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 20,
+    gap: 10,
+    marginTop: 16,
   },
   controlBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 100,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   controlBtnText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: '#1E3A8A',
   },
   resetBtn: {
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    padding: 11,
+    borderRadius: 100,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
   controlBtnPrimary: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1E3A8A',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 11,
+    borderRadius: 100,
     gap: 6,
   },
   controlBtnPrimaryText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
   disabledControlBtn: {
-    opacity: 0.4,
+    opacity: 0.35,
   },
 });

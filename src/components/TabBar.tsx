@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ActiveTab } from '../types';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme } from '../theme';
 
 interface TabBarProps {
   activeTab: ActiveTab;
@@ -16,123 +17,197 @@ export const TabBar: React.FC<TabBarProps> = ({
   bookmarksCount = 0,
 }) => {
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
-  const tabs: { key: ActiveTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: 'home', label: t.tabHome, icon: 'home-sharp' },
-    { key: 'tests', label: t.tabTests, icon: 'newspaper-sharp' },
-    { key: 'notes', label: t.tabNotes, icon: 'book-sharp' },
-    { key: 'flashcards', label: t.tabCards, icon: 'flash-sharp' },
-    { key: 'bookmarks', label: t.tabBookmarks, icon: 'bookmark-sharp' },
-    { key: 'syllabus', label: t.tabSyllabus, icon: 'list-sharp' },
-    { key: 'settings', label: t.tabSettings, icon: 'settings-sharp' },
+  // Highlight 'more' if in any secondary sub-screen
+  const isMoreActive =
+    activeTab === 'more' ||
+    activeTab === 'bookmarks' ||
+    activeTab === 'syllabus' ||
+    activeTab === 'settings';
+
+  const tabs: {
+    key: ActiveTab;
+    label: string;
+    activeIcon: keyof typeof Ionicons.glyphMap;
+    inactiveIcon: keyof typeof Ionicons.glyphMap;
+    isActive: boolean;
+    showBadge?: boolean;
+    badgeCount?: number;
+  }[] = [
+    {
+      key: 'home',
+      label: t.tabHome,
+      activeIcon: 'home',
+      inactiveIcon: 'home-outline',
+      isActive: activeTab === 'home',
+    },
+    {
+      key: 'tests',
+      label: t.tabTests,
+      activeIcon: 'newspaper',
+      inactiveIcon: 'newspaper-outline',
+      isActive: activeTab === 'tests',
+    },
+    {
+      key: 'notes',
+      label: t.tabNotes,
+      activeIcon: 'book',
+      inactiveIcon: 'book-outline',
+      isActive: activeTab === 'notes',
+    },
+    {
+      key: 'flashcards',
+      label: t.tabCards,
+      activeIcon: 'flash',
+      inactiveIcon: 'flash-outline',
+      isActive: activeTab === 'flashcards',
+    },
+    {
+      key: 'more',
+      label: t.tabMore,
+      activeIcon: 'grid',
+      inactiveIcon: 'grid-outline',
+      isActive: isMoreActive,
+      showBadge: bookmarksCount > 0,
+      badgeCount: bookmarksCount,
+    },
   ];
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.tabBarBg,
+          borderTopColor: colors.tabBarBorder,
+        },
+      ]}
+    >
+      <View style={styles.tabRow}>
         {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
+          const iconName = tab.isActive ? tab.activeIcon : tab.inactiveIcon;
+          const activeColor = colors.tabActiveText;
+          const inactiveColor = colors.tabInactiveText;
+
           return (
             <TouchableOpacity
               key={tab.key}
               onPress={() => onSelectTab(tab.key)}
-              style={[styles.tabButton, isActive && styles.activeTabButton]}
+              style={[
+                styles.tabButton,
+                tab.isActive && {
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.04)',
+                },
+              ]}
               activeOpacity={0.7}
             >
               <View style={styles.iconWrapper}>
                 <Ionicons
-                  name={tab.icon}
-                  size={20}
-                  color={isActive ? '#1E3A8A' : '#64748B'}
+                  name={iconName}
+                  size={21}
+                  color={tab.isActive ? activeColor : inactiveColor}
                 />
-                {tab.key === 'bookmarks' && bookmarksCount > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{bookmarksCount}</Text>
+                {tab.showBadge && (
+                  <View
+                    style={[
+                      styles.badge,
+                      {
+                        backgroundColor: colors.accent,
+                      },
+                    ]}
+                  >
+                    <Text style={styles.badgeText}>{tab.badgeCount}</Text>
                   </View>
                 )}
               </View>
+
               <Text
-                style={[styles.tabLabel, isActive && styles.activeTabLabel]}
+                style={[
+                  styles.tabLabel,
+                  {
+                    color: tab.isActive ? activeColor : inactiveColor,
+                    fontWeight: tab.isActive ? '800' : '600',
+                  },
+                ]}
                 numberOfLines={1}
               >
                 {tab.label}
               </Text>
-              {isActive && <View style={styles.activeIndicator} />}
+
+              {tab.isActive && (
+                <View
+                  style={[
+                    styles.activeDot,
+                    { backgroundColor: colors.accent },
+                  ]}
+                />
+              )}
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
     elevation: 8,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    paddingBottom: 4,
+    paddingTop: 4,
   },
-  scrollContent: {
+  tabRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-around',
     paddingHorizontal: 8,
-    paddingVertical: 6,
   },
   tabButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
-    minWidth: 64,
-  },
-  activeTabButton: {
-    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 2,
+    borderRadius: 12,
+    marginHorizontal: 3,
   },
   iconWrapper: {
     position: 'relative',
-    marginBottom: 3,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: 10,
+    marginTop: 2,
+    letterSpacing: -0.1,
   },
-  activeTabLabel: {
-    color: '#1E3A8A',
-    fontWeight: '800',
-  },
-  activeIndicator: {
-    width: 14,
-    height: 3,
-    backgroundColor: '#1E3A8A',
+  activeDot: {
+    width: 4,
+    height: 4,
     borderRadius: 2,
-    marginTop: 3,
+    marginTop: 2,
   },
   badge: {
     position: 'absolute',
     top: -4,
-    right: -8,
-    backgroundColor: '#EF4444',
-    borderRadius: 9,
+    right: -10,
+    borderRadius: 10,
     minWidth: 16,
     height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
   badgeText: {
     color: '#FFFFFF',
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '900',
   },
 });

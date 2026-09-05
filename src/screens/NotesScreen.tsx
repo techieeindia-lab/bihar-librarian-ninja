@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme, unitColorMap } from '../theme';
 import { STUDY_UNITS } from '../data/studyNotes';
 import { StudyUnit } from '../types';
 
@@ -17,6 +18,8 @@ interface NotesScreenProps {
 
 export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
   const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
+
   const [selectedUnit, setSelectedUnit] = useState<StudyUnit>(
     STUDY_UNITS.find((u) => u.id === initialUnitId) || STUDY_UNITS[0]
   );
@@ -33,19 +36,27 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
     setExpandedTopicId((prev) => (prev === topicId ? '' : topicId));
   };
 
+  const activeColorConfig =
+    unitColorMap[selectedUnit.unitNumber] || unitColorMap[1];
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.canvas }]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Title */}
       <View style={styles.headerBox}>
-        <Text style={styles.screenTitle}>{t.notesTitle}</Text>
-        <Text style={styles.screenSubtitle}>
+        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>
+          {t.notesTitle}
+        </Text>
+        <Text style={[styles.screenSubtitle, { color: colors.textSecondary }]}>
           {language === 'hi'
-            ? 'परीक्षा उपयोगी सारगर्भित अध्ययन सामग्री एवं मुख्य परीक्षा तथ्य'
-            : 'Concise study notes, key facts, and revision highlights'}
+            ? 'परीक्षा उपयोगी 7 यूनिट सारगर्भित अध्ययन सामग्री एवं मुख्य तथ्य'
+            : 'Concise study notes, key facts, and revision highlights across 7 units'}
         </Text>
       </View>
 
-      {/* Horizontal Unit Selector Tabs */}
+      {/* Horizontal Unit Selector Tabs (Color-Coded) */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -53,20 +64,48 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
       >
         {STUDY_UNITS.map((unit) => {
           const isSelected = selectedUnit.id === unit.id;
+          const uColor = unitColorMap[unit.unitNumber] || unitColorMap[1];
+
           return (
             <TouchableOpacity
               key={unit.id}
               style={[
                 styles.unitChip,
-                isSelected && styles.selectedUnitChip,
+                {
+                  backgroundColor: isSelected
+                    ? uColor.primary
+                    : isDark
+                    ? uColor.softDark
+                    : colors.card,
+                  borderColor: isSelected
+                    ? uColor.primary
+                    : isDark
+                    ? uColor.borderDark
+                    : colors.border,
+                },
               ]}
               onPress={() => handleSelectUnit(unit)}
               activeOpacity={0.8}
             >
+              <View
+                style={[
+                  styles.unitDot,
+                  {
+                    backgroundColor: isSelected ? '#FFFFFF' : uColor.primary,
+                  },
+                ]}
+              />
               <Text
                 style={[
                   styles.unitChipText,
-                  isSelected && styles.selectedUnitChipText,
+                  {
+                    color: isSelected
+                      ? '#FFFFFF'
+                      : isDark
+                      ? '#EDEDED'
+                      : colors.textPrimary,
+                    fontWeight: isSelected ? '800' : '600',
+                  },
                 ]}
               >
                 {language === 'hi'
@@ -78,12 +117,42 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
         })}
       </ScrollView>
 
-      {/* Active Unit Banner */}
-      <View style={styles.unitBanner}>
-        <Text style={styles.unitBannerTitle}>
+      {/* Active Unit Banner (Color-Coded to Active Unit) */}
+      <View
+        style={[
+          styles.unitBanner,
+          {
+            backgroundColor: isDark
+              ? activeColorConfig.softDark
+              : activeColorConfig.softLight,
+            borderColor: isDark
+              ? activeColorConfig.borderDark
+              : activeColorConfig.borderLight,
+            borderLeftColor: activeColorConfig.primary,
+          },
+        ]}
+      >
+        <View style={styles.bannerTopRow}>
+          <View
+            style={[
+              styles.unitBadgePill,
+              { backgroundColor: activeColorConfig.primary },
+            ]}
+          >
+            <Text style={styles.unitBadgePillText}>
+              {language === 'hi' ? `यूनिट ${selectedUnit.unitNumber}` : `UNIT ${selectedUnit.unitNumber}`}
+            </Text>
+          </View>
+        </View>
+        <Text
+          style={[
+            styles.unitBannerTitle,
+            { color: isDark ? '#FFFFFF' : activeColorConfig.primary },
+          ]}
+        >
           {selectedUnit.title[language]}
         </Text>
-        <Text style={styles.unitBannerDesc}>
+        <Text style={[styles.unitBannerDesc, { color: colors.textSecondary }]}>
           {selectedUnit.shortDesc[language]}
         </Text>
       </View>
@@ -93,37 +162,96 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
         {selectedUnit.topics.map((topic) => {
           const isExpanded = expandedTopicId === topic.id;
           return (
-            <View key={topic.id} style={styles.topicCard}>
+            <View
+              key={topic.id}
+              style={[
+                styles.topicCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: isExpanded ? activeColorConfig.primary : colors.border,
+                  borderLeftWidth: isExpanded ? 3 : 1,
+                  borderLeftColor: isExpanded ? activeColorConfig.primary : colors.border,
+                },
+              ]}
+            >
               <TouchableOpacity
-                style={styles.topicHeader}
+                style={[
+                  styles.topicHeader,
+                  {
+                    backgroundColor: colors.card,
+                  },
+                ]}
                 onPress={() => toggleTopic(topic.id)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.topicTitle}>{topic.title[language]}</Text>
+                <Text
+                  style={[
+                    styles.topicTitle,
+                    {
+                      color: isExpanded
+                        ? activeColorConfig.primary
+                        : colors.textPrimary,
+                    },
+                  ]}
+                >
+                  {topic.title[language]}
+                </Text>
                 <Ionicons
                   name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color="#1E3A8A"
+                  size={18}
+                  color={isExpanded ? activeColorConfig.primary : colors.textSecondary}
                 />
               </TouchableOpacity>
 
               {isExpanded && (
-                <View style={styles.topicBody}>
-                  <Text style={styles.topicContent}>
+                <View
+                  style={[
+                    styles.topicBody,
+                    {
+                      borderTopColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.topicContent, { color: colors.textPrimary }]}>
                     {topic.content[language]}
                   </Text>
 
                   {/* Key Exam Points Box */}
                   {topic.keyPoints && topic.keyPoints.length > 0 && (
-                    <View style={styles.keyPointsBox}>
+                    <View
+                      style={[
+                        styles.keyPointsBox,
+                        {
+                          backgroundColor: isDark
+                            ? 'rgba(245, 158, 11, 0.12)'
+                            : '#FFFBEB',
+                          borderColor: isDark
+                            ? 'rgba(245, 158, 11, 0.3)'
+                            : '#FDE68A',
+                          borderLeftColor: '#F59E0B',
+                        },
+                      ]}
+                    >
                       <View style={styles.keyPointsHeader}>
-                        <Ionicons name="star" size={16} color="#D97706" />
-                        <Text style={styles.keyPointsTitle}>{t.keyPoints}</Text>
+                        <Ionicons name="star" size={15} color="#F59E0B" />
+                        <Text
+                          style={[
+                            styles.keyPointsTitle,
+                            { color: isDark ? '#FBBF24' : '#92400E' },
+                          ]}
+                        >
+                          {t.keyPoints}
+                        </Text>
                       </View>
                       {topic.keyPoints.map((pt, idx) => (
                         <View key={idx} style={styles.bulletRow}>
-                          <Text style={styles.bulletDot}>•</Text>
-                          <Text style={styles.bulletText}>
+                          <Text style={[styles.bulletDot, { color: '#F59E0B' }]}>•</Text>
+                          <Text
+                            style={[
+                              styles.bulletText,
+                              { color: isDark ? colors.textPrimary : '#78350F' },
+                            ]}
+                          >
                             {pt[language]}
                           </Text>
                         </View>
@@ -137,7 +265,7 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
         })}
       </View>
 
-      <View style={{ height: 32 }} />
+      <View style={{ height: 36 }} />
     </ScrollView>
   );
 };
@@ -145,139 +273,139 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
   },
   headerBox: {
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: 14,
+    marginBottom: 10,
   },
   screenTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
+    letterSpacing: -0.4,
   },
   screenSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 4,
-    lineHeight: 18,
+    fontSize: 12,
+    marginTop: 3,
+    lineHeight: 17,
   },
   unitSelectorScroll: {
     flexDirection: 'row',
     gap: 8,
-    marginVertical: 12,
+    marginVertical: 10,
   },
   unitChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 13,
+    paddingVertical: 7,
+    borderRadius: 100,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    gap: 6,
   },
-  selectedUnitChip: {
-    backgroundColor: '#1E3A8A',
-    borderColor: '#1E3A8A',
+  unitDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   unitChipText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-  },
-  selectedUnitChipText: {
-    color: '#FFFFFF',
+    fontSize: 12,
   },
   unitBanner: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 16,
-    marginBottom: 14,
+    marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#2563EB',
+    borderWidth: 1,
+  },
+  bannerTopRow: {
+    marginBottom: 6,
+  },
+  unitBadgePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  unitBadgePillText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   unitBannerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1E3A8A',
+    letterSpacing: -0.2,
+    lineHeight: 22,
   },
   unitBannerDesc: {
     fontSize: 12,
-    color: '#475569',
     marginTop: 4,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   topicsContainer: {
-    gap: 12,
+    gap: 10,
   },
   topicCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     overflow: 'hidden',
   },
   topicHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    padding: 14,
   },
   topicTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
-    color: '#0F172A',
     marginRight: 8,
+    letterSpacing: -0.2,
   },
   topicBody: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
   },
   topicContent: {
-    fontSize: 14,
-    color: '#334155',
-    lineHeight: 22,
-    marginTop: 12,
+    fontSize: 13,
+    lineHeight: 21,
+    marginTop: 10,
   },
   keyPointsBox: {
-    marginTop: 16,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
-    padding: 14,
+    marginTop: 14,
+    borderRadius: 10,
+    padding: 12,
+    borderLeftWidth: 3,
     borderWidth: 1,
-    borderColor: '#FDE68A',
   },
   keyPointsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   keyPointsTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#92400E',
   },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: 4,
+    marginTop: 3,
   },
   bulletDot: {
-    fontSize: 16,
-    color: '#B45309',
+    fontSize: 15,
     marginRight: 6,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   bulletText: {
     flex: 1,
-    fontSize: 13,
-    color: '#78350F',
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '600',
   },
 });

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme } from '../theme';
 
 interface TimerProps {
   totalSeconds: number;
@@ -16,6 +17,7 @@ export const Timer: React.FC<TimerProps> = ({
 }) => {
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
 
   useEffect(() => {
     if (!isRunning) return;
@@ -50,17 +52,43 @@ export const Timer: React.FC<TimerProps> = ({
 
   const isLowTime = secondsLeft < 300; // less than 5 minutes
 
+  const normalBg = isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF';
+  const normalBorder = isDark ? 'rgba(0, 112, 243, 0.3)' : '#BFDBFE';
+  const normalColor = colors.accent;
+
+  const lowBg = isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2';
+  const lowBorder = isDark ? 'rgba(239, 68, 68, 0.3)' : '#FECACA';
+  const lowColor = colors.error;
+
   return (
-    <View style={[styles.container, isLowTime && styles.lowTimeContainer]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isLowTime ? lowBg : normalBg,
+          borderColor: isLowTime ? lowBorder : normalBorder,
+        },
+      ]}
+    >
       <Ionicons
         name="time-outline"
-        size={16}
-        color={isLowTime ? '#DC2626' : '#1E3A8A'}
+        size={15}
+        color={isLowTime ? lowColor : normalColor}
       />
-      <Text style={[styles.timeLabel, isLowTime && styles.lowTimeText]}>
+      <Text
+        style={[
+          styles.timeLabel,
+          { color: isLowTime ? lowColor : normalColor },
+        ]}
+      >
         {t.timeRemaining}
       </Text>
-      <Text style={[styles.timeValue, isLowTime && styles.lowTimeText]}>
+      <Text
+        style={[
+          styles.timeValue,
+          { color: isLowTime ? lowColor : normalColor },
+        ]}
+      >
         {formattedTime}
       </Text>
     </View>
@@ -71,30 +99,19 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
+    paddingVertical: 5,
+    borderRadius: 100,
+    gap: 5,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  lowTimeContainer: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
   },
   timeLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1E3A8A',
   },
   timeValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
-    color: '#1E3A8A',
     fontVariant: ['tabular-nums'],
-  },
-  lowTimeText: {
-    color: '#DC2626',
   },
 });

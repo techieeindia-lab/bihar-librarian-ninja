@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme } from '../theme';
 
 interface HeaderProps {
   title?: string;
@@ -19,26 +20,47 @@ export const Header: React.FC<HeaderProps> = ({
   streak = 1,
 }) => {
   const { language, toggleLanguage, t } = useLanguage();
+  const { colors, isDark, toggleTheme } = useTheme();
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.canvasElevated,
+          borderBottomColor: colors.border,
+        },
+      ]}
+    >
       <View style={styles.topRow}>
         <View style={styles.leftSection}>
           {showBack && (
             <TouchableOpacity
               onPress={onBack}
-              style={styles.backButton}
+              style={[
+                styles.backButton,
+                {
+                  backgroundColor: colors.canvasSubtle,
+                  borderColor: colors.border,
+                },
+              ]}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={24} color="#0F172A" />
+              <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
           )}
           <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text
+              style={[styles.title, { color: colors.textPrimary }]}
+              numberOfLines={1}
+            >
               {title || t.appName}
             </Text>
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text
+              style={[styles.subtitle, { color: colors.textSecondary }]}
+              numberOfLines={1}
+            >
               {subtitle || t.appSubtitle}
             </Text>
           </View>
@@ -46,18 +68,51 @@ export const Header: React.FC<HeaderProps> = ({
 
         <View style={styles.rightSection}>
           {/* Daily Streak Badge */}
-          <View style={styles.streakBadge}>
-            <Ionicons name="flame" size={16} color="#EA580C" />
+          <View
+            style={[
+              styles.streakBadge,
+              {
+                backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FFEDD5',
+              },
+            ]}
+          >
+            <Ionicons name="flame" size={15} color="#EA580C" />
             <Text style={styles.streakText}>{streak}</Text>
           </View>
+
+          {/* Quick Theme Toggle Button */}
+          <TouchableOpacity
+            onPress={toggleTheme}
+            style={[
+              styles.themeButton,
+              {
+                backgroundColor: colors.canvasSubtle,
+                borderColor: colors.border,
+              },
+            ]}
+            activeOpacity={0.8}
+            accessibilityLabel="Toggle dark mode"
+          >
+            <Ionicons
+              name={isDark ? 'sunny' : 'moon'}
+              size={16}
+              color={isDark ? '#F59E0B' : colors.textPrimary}
+            />
+          </TouchableOpacity>
 
           {/* Bilingual Toggle Button */}
           <TouchableOpacity
             onPress={toggleLanguage}
-            style={styles.langButton}
+            style={[
+              styles.langButton,
+              {
+                backgroundColor: colors.primary,
+              },
+            ]}
             activeOpacity={0.8}
           >
-            <Text style={styles.langButtonText}>
+            <Text style={[styles.langButtonText, { color: colors.textOnPrimary }]}>
               {language === 'hi' ? 'ENG' : 'हिन्दी'}
             </Text>
           </TouchableOpacity>
@@ -69,17 +124,15 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
     elevation: 2,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
+    shadowRadius: 2,
   },
   topRow: {
     flexDirection: 'row',
@@ -94,54 +147,60 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 6,
-    marginRight: 8,
+    marginRight: 10,
     borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
   },
   titleContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 2,
+    fontWeight: '500',
+    marginTop: 1,
   },
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEDD5',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 16,
-    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 3,
+    borderWidth: 1,
   },
   streakText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#C2410C',
+    fontWeight: '800',
+    color: '#EA580C',
+  },
+  themeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   langButton: {
-    backgroundColor: '#1E3A8A',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
-    elevation: 1,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   langButtonText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });

@@ -71,5 +71,6 @@ export interface Flashcard {
   subtext?: BilingualText;
 }
 
-export type ActiveTab = 'home' | 'tests' | 'notes' | 'flashcards' | 'syllabus' | 'bookmarks' | 'settings';
+export type ActiveTab = 'home' | 'tests' | 'notes' | 'flashcards' | 'more' | 'syllabus' | 'bookmarks' | 'settings';
 export type ScreenView = 'main' | 'test_active' | 'test_result' | 'note_detail';
+

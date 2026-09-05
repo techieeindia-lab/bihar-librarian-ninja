@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme } from '../theme';
 import { QUESTIONS } from '../data/questions';
 import { Question } from '../types';
 import { StorageService } from '../storage/storageService';
@@ -15,6 +16,7 @@ import { QuestionCard } from '../components/QuestionCard';
 
 export const BookmarksScreen: React.FC = () => {
   const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Question[]>([]);
   const [showAnswers, setShowAnswers] = useState(true);
 
@@ -34,11 +36,16 @@ export const BookmarksScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.canvas }]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Header */}
       <View style={styles.headerBox}>
-        <Text style={styles.screenTitle}>{t.bookmarksTitle}</Text>
-        <Text style={styles.screenSubtitle}>
+        <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>
+          {t.bookmarksTitle}
+        </Text>
+        <Text style={[styles.screenSubtitle, { color: colors.textSecondary }]}>
           {language === 'hi'
             ? 'कठिन एवं महत्वपूर्ण प्रश्न जिन्हें आपने पुनरावलोकन हेतु सहेजा है'
             : 'Questions flagged during mock tests for focused revision'}
@@ -48,20 +55,32 @@ export const BookmarksScreen: React.FC = () => {
       {/* Action Bar */}
       {bookmarkedQuestions.length > 0 && (
         <View style={styles.actionBar}>
-          <Text style={styles.countText}>
+          <Text style={[styles.countText, { color: colors.accent }]}>
             {bookmarkedQuestions.length} {t.questions}
           </Text>
 
           <TouchableOpacity
-            style={styles.toggleAnswerBtn}
+            style={[
+              styles.toggleAnswerBtn,
+              {
+                backgroundColor: colors.canvasSubtle,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={() => setShowAnswers(!showAnswers)}
+            activeOpacity={0.7}
           >
             <Ionicons
               name={showAnswers ? 'eye-off-outline' : 'eye-outline'}
-              size={16}
-              color="#1E3A8A"
+              size={15}
+              color={colors.textPrimary}
             />
-            <Text style={styles.toggleAnswerText}>
+            <Text
+              style={[
+                styles.toggleAnswerText,
+                { color: colors.textPrimary },
+              ]}
+            >
               {showAnswers ? t.hideExplanation : t.showExplanation}
             </Text>
           </TouchableOpacity>
@@ -86,17 +105,27 @@ export const BookmarksScreen: React.FC = () => {
       ) : (
         /* Empty State */
         <View style={styles.emptyState}>
-          <View style={styles.emptyIconCircle}>
-            <Ionicons name="bookmark-outline" size={40} color="#94A3B8" />
+          <View
+            style={[
+              styles.emptyIconCircle,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Ionicons name="bookmark-outline" size={36} color={colors.textMuted} />
           </View>
-          <Text style={styles.emptyTitle}>
+          <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
             {language === 'hi' ? 'कोई बुकमार्क नहीं' : 'No Bookmarks Yet'}
           </Text>
-          <Text style={styles.emptySubtitle}>{t.noBookmarksMsg}</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            {t.noBookmarksMsg}
+          </Text>
         </View>
       )}
 
-      <View style={{ height: 32 }} />
+      <View style={{ height: 36 }} />
     </ScrollView>
   );
 };
@@ -104,23 +133,21 @@ export const BookmarksScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
   },
   headerBox: {
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: 14,
+    marginBottom: 10,
   },
   screenTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
-    color: '#0F172A',
+    letterSpacing: -0.4,
   },
   screenSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 4,
-    lineHeight: 18,
+    fontSize: 12,
+    marginTop: 3,
+    lineHeight: 17,
   },
   actionBar: {
     flexDirection: 'row',
@@ -129,26 +156,24 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   countText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#1E3A8A',
   },
   toggleAnswerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 14,
-    gap: 6,
+    borderRadius: 100,
+    borderWidth: 1,
+    gap: 5,
   },
   toggleAnswerText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#1E3A8A',
   },
   listContainer: {
-    marginTop: 6,
+    marginTop: 4,
   },
   emptyState: {
     alignItems: 'center',
@@ -157,24 +182,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F1F5F9',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
   },
   emptySubtitle: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 12,
     textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: 6,
+    lineHeight: 18,
   },
 });

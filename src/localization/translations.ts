@@ -11,9 +11,21 @@ export const translations = {
     tabTests: 'मॉक टेस्ट',
     tabNotes: 'नोट्स',
     tabCards: 'रिवीजन',
+    tabMore: 'अधिक (More)',
     tabSyllabus: 'पाठ्यक्रम',
     tabBookmarks: 'सहेजे प्रश्न',
     tabSettings: 'सेटिंग्स',
+    
+    // Theme & Navigation
+    themeTitle: 'थीम (Appearance & Theme)',
+    themeLight: 'लाइट (Light)',
+    themeDark: 'डार्क (Dark)',
+    themeSystem: 'सिस्टम (System)',
+    exploreSyllabus: 'पाठ्यक्रम देखें',
+    targetGoal: 'दैनिक अभ्यास लक्ष्य',
+    quickPillarsTitle: 'तैयारी के मुख्य स्तंभ',
+    moreMenuTitle: 'अध्ययन केंद्र एवं सेटिंग्स',
+    moreMenuSubtitle: 'सहेजे गए प्रश्न, परीक्षा सिलेबस एवं ऐप प्राथमिकताएं',
     
     // Home Dashboard
     examCountdownTitle: 'बिहार विद्यालय पुस्तकालयाध्यक्ष परीक्षा 2026',
@@ -139,9 +151,21 @@ export const translations = {
     tabTests: 'Mock Tests',
     tabNotes: 'Notes',
     tabCards: 'Revision',
+    tabMore: 'More',
     tabSyllabus: 'Syllabus',
     tabBookmarks: 'Bookmarks',
     tabSettings: 'Settings',
+    
+    // Theme & Navigation
+    themeTitle: 'Appearance & Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
+    exploreSyllabus: 'View Syllabus',
+    targetGoal: 'Daily Practice Goal',
+    quickPillarsTitle: 'Preparation Pillars',
+    moreMenuTitle: 'Study Hub & Preferences',
+    moreMenuSubtitle: 'Saved questions, official syllabus, dark theme & policies',
     
     // Home Dashboard
     examCountdownTitle: 'Bihar School Librarian Exam 2026',

@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { UserTestAttempt, Question } from '../types';
 import { useLanguage } from '../localization/LanguageContext';
+import { useTheme } from '../theme';
 import { QuestionCard } from '../components/QuestionCard';
 import { StorageService } from '../storage/storageService';
 
@@ -26,6 +27,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
   onBackToTests,
 }) => {
   const { language, t } = useLanguage();
+  const { colors, isDark } = useTheme();
   const [filter, setFilter] = useState<'all' | 'incorrect' | 'correct' | 'skipped'>('all');
   const [bookmarkedMap, setBookmarkedMap] = useState<Record<string, boolean>>({});
 
@@ -53,17 +55,29 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
   const seconds = attempt.timeSpentSeconds % 60;
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.canvas }]}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Scorecard Hero Header */}
       <View
         style={[
           styles.scoreHero,
-          isPassed ? styles.passedHero : styles.failedHero,
+          {
+            backgroundColor: isPassed
+              ? isDark
+                ? '#064E3B'
+                : '#059669'
+              : isDark
+              ? '#7F1D1D'
+              : '#DC2626',
+            borderColor: colors.border,
+          },
         ]}
       >
         <Ionicons
-          name={isPassed ? 'ribbon' : 'alert-circle'}
-          size={48}
+          name={isPassed ? 'ribbon-outline' : 'alert-circle-outline'}
+          size={44}
           color="#FFFFFF"
         />
         <Text style={styles.heroStatusText}>
@@ -85,16 +99,16 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
             onPress={onBackToTests}
             activeOpacity={0.8}
           >
-            <Ionicons name="arrow-back" size={16} color="#FFFFFF" />
+            <Ionicons name="arrow-back" size={15} color="#FFFFFF" />
             <Text style={styles.heroBtnSecondaryText}>{t.backToTests}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.heroBtnPrimary}
             onPress={onReattempt}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Ionicons name="refresh" size={16} color="#1E3A8A" />
+            <Ionicons name="refresh" size={15} color="#000000" />
             <Text style={styles.heroBtnPrimaryText}>{t.reattemptTest}</Text>
           </TouchableOpacity>
         </View>
@@ -102,107 +116,129 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
 
       {/* Breakdown Grid */}
       <View style={styles.breakdownGrid}>
-        <View style={[styles.breakdownCard, { borderLeftColor: '#10B981' }]}>
+        <View
+          style={[
+            styles.breakdownCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderLeftColor: '#10B981',
+            },
+          ]}
+        >
           <Text style={[styles.breakdownNum, { color: '#10B981' }]}>
             {attempt.correctCount}
           </Text>
-          <Text style={styles.breakdownLabel}>{t.correctAnswers}</Text>
+          <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+            {t.correctAnswers}
+          </Text>
         </View>
 
-        <View style={[styles.breakdownCard, { borderLeftColor: '#EF4444' }]}>
+        <View
+          style={[
+            styles.breakdownCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderLeftColor: '#EF4444',
+            },
+          ]}
+        >
           <Text style={[styles.breakdownNum, { color: '#EF4444' }]}>
             {attempt.wrongCount}
           </Text>
-          <Text style={styles.breakdownLabel}>{t.wrongAnswers}</Text>
+          <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+            {t.wrongAnswers}
+          </Text>
         </View>
 
-        <View style={[styles.breakdownCard, { borderLeftColor: '#F59E0B' }]}>
+        <View
+          style={[
+            styles.breakdownCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderLeftColor: '#F59E0B',
+            },
+          ]}
+        >
           <Text style={[styles.breakdownNum, { color: '#F59E0B' }]}>
             {attempt.skippedCount}
           </Text>
-          <Text style={styles.breakdownLabel}>{t.skippedAnswers}</Text>
+          <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+            {t.skippedAnswers}
+          </Text>
         </View>
 
-        <View style={[styles.breakdownCard, { borderLeftColor: '#3B82F6' }]}>
-          <Text style={[styles.breakdownNum, { color: '#3B82F6' }]}>
+        <View
+          style={[
+            styles.breakdownCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              borderLeftColor: colors.accent,
+            },
+          ]}
+        >
+          <Text style={[styles.breakdownNum, { color: colors.accent }]}>
             {minutes}m {seconds}s
           </Text>
-          <Text style={styles.breakdownLabel}>{t.timeSpent}</Text>
+          <Text style={[styles.breakdownLabel, { color: colors.textSecondary }]}>
+            {t.timeSpent}
+          </Text>
         </View>
       </View>
 
-      {/* Solutions Section Header & Filter Tabs */}
-      <View style={styles.solutionSection}>
-        <Text style={styles.solutionTitle}>{t.detailedSolutions}</Text>
+      {/* Detailed Solutions Section */}
+      <View style={styles.solutionsHeader}>
+        <Text style={[styles.solutionsTitle, { color: colors.textPrimary }]}>
+          {t.detailedSolutions}
+        </Text>
+        <Text style={[styles.solutionsCount, { color: colors.textMuted }]}>
+          ({filteredQuestions.length} {t.questions})
+        </Text>
+      </View>
 
-        <View style={styles.filterTabsRow}>
+      {/* Filter Tabs (Vercel Pills) */}
+      <View style={styles.filterRow}>
+        {(['all', 'incorrect', 'correct', 'skipped'] as const).map((f) => (
           <TouchableOpacity
-            style={[styles.filterTab, filter === 'all' && styles.activeFilterTab]}
-            onPress={() => setFilter('all')}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filter === 'all' && styles.activeFilterTabText,
-              ]}
-            >
-              {t.filterAll} ({questions.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
+            key={f}
             style={[
-              styles.filterTab,
-              filter === 'incorrect' && styles.activeFilterTab,
+              styles.filterBtn,
+              {
+                backgroundColor:
+                  filter === f ? colors.primary : colors.card,
+                borderColor: filter === f ? colors.primary : colors.border,
+              },
             ]}
-            onPress={() => setFilter('incorrect')}
+            onPress={() => setFilter(f)}
+            activeOpacity={0.7}
           >
             <Text
               style={[
-                styles.filterTabText,
-                filter === 'incorrect' && styles.activeFilterTabText,
+                styles.filterBtnText,
+                {
+                  color:
+                    filter === f ? colors.textOnPrimary : colors.textSecondary,
+                  fontWeight: filter === f ? '800' : '600',
+                },
               ]}
             >
-              {t.filterIncorrect} ({attempt.wrongCount})
+              {f === 'all'
+                ? t.filterAll
+                : f === 'incorrect'
+                ? t.filterIncorrect
+                : f === 'correct'
+                ? t.filterCorrect
+                : t.filterSkipped}
             </Text>
           </TouchableOpacity>
+        ))}
+      </View>
 
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filter === 'correct' && styles.activeFilterTab,
-            ]}
-            onPress={() => setFilter('correct')}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filter === 'correct' && styles.activeFilterTabText,
-              ]}
-            >
-              {t.filterCorrect} ({attempt.correctCount})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filter === 'skipped' && styles.activeFilterTab,
-            ]}
-            onPress={() => setFilter('skipped')}
-          >
-            <Text
-              style={[
-                styles.filterTabText,
-                filter === 'skipped' && styles.activeFilterTabText,
-              ]}
-            >
-              {t.filterSkipped} ({attempt.skippedCount})
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Filtered Questions with Solutions */}
+      {/* Questions with Solutions */}
+      <View style={styles.solutionList}>
         {filteredQuestions.map((q, idx) => (
           <QuestionCard
             key={q.id}
@@ -217,7 +253,7 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
         ))}
       </View>
 
-      <View style={{ height: 32 }} />
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 };
@@ -225,31 +261,26 @@ export const ResultScreen: React.FC<ResultScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
     paddingHorizontal: 16,
   },
   scoreHero: {
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 18,
+    padding: 22,
     alignItems: 'center',
-    marginTop: 16,
-    elevation: 4,
-  },
-  passedHero: {
-    backgroundColor: '#1E3A8A',
-  },
-  failedHero: {
-    backgroundColor: '#991B1B',
+    marginTop: 14,
+    elevation: 3,
+    borderWidth: 1,
   },
   heroStatusText: {
     fontSize: 20,
     fontWeight: '900',
     color: '#FFFFFF',
     marginTop: 8,
+    letterSpacing: -0.3,
   },
   testTitleText: {
     fontSize: 13,
-    color: '#E2E8F0',
+    color: 'rgba(255, 255, 255, 0.85)',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -262,28 +293,26 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '900',
     color: '#FFFFFF',
+    letterSpacing: -1,
   },
   scoreSubText: {
-    fontSize: 18,
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '700',
-    color: '#E2E8F0',
     marginLeft: 6,
   },
   heroBtnRow: {
     flexDirection: 'row',
     gap: 12,
     marginTop: 6,
-    width: '100%',
   },
   heroBtnSecondary: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 100,
     gap: 6,
   },
   heroBtnSecondaryText: {
@@ -292,76 +321,75 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   heroBtnPrimary: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
+    paddingHorizontal: 18,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 100,
     gap: 6,
+    elevation: 2,
   },
   heroBtnPrimaryText: {
-    color: '#1E3A8A',
+    color: '#000000',
     fontSize: 13,
     fontWeight: '800',
   },
   breakdownGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 16,
+    gap: 8,
+    marginVertical: 14,
   },
   breakdownCard: {
     flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 14,
+    padding: 10,
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderLeftWidth: 4,
   },
   breakdownNum: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '900',
   },
   breakdownLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#64748B',
-    marginTop: 4,
+    marginTop: 2,
+    textAlign: 'center',
   },
-  solutionSection: {
-    marginTop: 24,
-  },
-  solutionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 12,
-  },
-  filterTabsRow: {
+  solutionsHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 8,
     gap: 6,
-    marginBottom: 14,
   },
-  filterTab: {
+  solutionsTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  solutionsCount: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+    flexWrap: 'wrap',
+  },
+  filterBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    borderRadius: 100,
+    borderWidth: 1,
   },
-  activeFilterTab: {
-    backgroundColor: '#1E3A8A',
-  },
-  filterTabText: {
+  filterBtnText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#475569',
   },
-  activeFilterTabText: {
-    color: '#FFFFFF',
+  solutionList: {
+    marginTop: 4,
   },
 });

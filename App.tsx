@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, BackHandler, StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { ThemeProvider, useTheme } from './src/theme';
 import { LanguageProvider, useLanguage } from './src/localization/LanguageContext';
 import { Header } from './src/components/Header';
 import { TabBar } from './src/components/TabBar';
@@ -19,7 +20,9 @@ import { QUESTIONS } from './src/data/questions';
 import { StorageService } from './src/storage/storageService';
 
 const MainAppContent: React.FC = () => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+  const { colors, isDark } = useTheme();
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [screenView, setScreenView] = useState<ScreenView>('main');
   const [activeTest, setActiveTest] = useState<MockTest | null>(null);
@@ -33,7 +36,6 @@ const MainAppContent: React.FC = () => {
 
     const backAction = () => {
       if (screenView === 'test_active') {
-        // Exit test confirmation
         setScreenView('main');
         setActiveTest(null);
         return true;
@@ -41,6 +43,10 @@ const MainAppContent: React.FC = () => {
       if (screenView === 'test_result') {
         setScreenView('main');
         setActiveTab('tests');
+        return true;
+      }
+      if (activeTab === 'bookmarks' || activeTab === 'syllabus' || activeTab === 'settings') {
+        setActiveTab('more');
         return true;
       }
       if (activeTab !== 'home') {
@@ -97,22 +103,23 @@ const MainAppContent: React.FC = () => {
     setActiveTab('notes');
   };
 
-  // Get test specific questions
   const getActiveTestQuestions = () => {
     if (!activeTest) return QUESTIONS;
     return QUESTIONS.filter((q) => activeTest.questionIds.includes(q.id));
   };
 
-  // Render active main tab
+  const handleNavigateTab = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    loadAppInitialState();
+  };
+
+  // Render active main content
   const renderTabContent = () => {
     switch (activeTab) {
       case 'home':
         return (
           <HomeScreen
-            onNavigateTab={(tab) => {
-              setActiveTab(tab);
-              loadAppInitialState();
-            }}
+            onNavigateTab={handleNavigateTab}
             onStartMockTest={handleStartTest}
             onSelectUnitNote={handleSelectUnitNote}
           />
@@ -123,16 +130,22 @@ const MainAppContent: React.FC = () => {
         return <NotesScreen initialUnitId={selectedNoteUnitId} />;
       case 'flashcards':
         return <FlashcardsScreen />;
+      case 'more':
+      case 'settings':
+        return (
+          <SettingsScreen
+            onNavigateTab={handleNavigateTab}
+            bookmarksCount={bookmarksCount}
+          />
+        );
       case 'bookmarks':
         return <BookmarksScreen />;
       case 'syllabus':
         return <SyllabusScreen />;
-      case 'settings':
-        return <SettingsScreen />;
       default:
         return (
           <HomeScreen
-            onNavigateTab={(tab) => setActiveTab(tab)}
+            onNavigateTab={handleNavigateTab}
             onStartMockTest={handleStartTest}
             onSelectUnitNote={handleSelectUnitNote}
           />
@@ -140,9 +153,46 @@ const MainAppContent: React.FC = () => {
     }
   };
 
+  const getHeaderTitle = () => {
+    switch (activeTab) {
+      case 'home':
+        return t.appName;
+      case 'tests':
+        return t.tabTests;
+      case 'notes':
+        return t.tabNotes;
+      case 'flashcards':
+        return t.tabCards;
+      case 'more':
+        return t.moreMenuTitle;
+      case 'bookmarks':
+        return t.tabBookmarks;
+      case 'syllabus':
+        return t.tabSyllabus;
+      case 'settings':
+        return t.tabSettings;
+      default:
+        return t.appName;
+    }
+  };
+
+  const handleHeaderBack = () => {
+    if (activeTab === 'bookmarks' || activeTab === 'syllabus' || activeTab === 'settings') {
+      setActiveTab('more');
+    } else {
+      setActiveTab('home');
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.canvasElevated }]}
+      edges={['top', 'left', 'right']}
+    >
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.canvasElevated}
+      />
 
       {/* When taking active test */}
       {screenView === 'test_active' && activeTest && (
@@ -159,7 +209,7 @@ const MainAppContent: React.FC = () => {
 
       {/* When viewing test scorecard & solutions */}
       {screenView === 'test_result' && testAttempt && (
-        <>
+        <View style={[styles.mainContainer, { backgroundColor: colors.canvas }]}>
           <Header
             title={t.testResultTitle}
             showBack={true}
@@ -172,40 +222,23 @@ const MainAppContent: React.FC = () => {
             onReattempt={handleReattemptTest}
             onBackToTests={handleBackToTests}
           />
-        </>
+        </View>
       )}
 
-      {/* Main View with Tab Navigation */}
+      {/* Main View with 5-Tab Navigation */}
       {screenView === 'main' && (
-        <View style={styles.mainContainer}>
+        <View style={[styles.mainContainer, { backgroundColor: colors.canvas }]}>
           <Header
-            title={
-              activeTab === 'home'
-                ? t.appName
-                : activeTab === 'tests'
-                ? t.tabTests
-                : activeTab === 'notes'
-                ? t.tabNotes
-                : activeTab === 'flashcards'
-                ? t.tabCards
-                : activeTab === 'bookmarks'
-                ? t.tabBookmarks
-                : activeTab === 'syllabus'
-                ? t.tabSyllabus
-                : t.tabSettings
-            }
-            subtitle={t.appSubtitle}
+            title={getHeaderTitle()}
+            subtitle={activeTab === 'home' ? t.appSubtitle : undefined}
             streak={streak}
             showBack={activeTab !== 'home'}
-            onBack={() => setActiveTab('home')}
+            onBack={handleHeaderBack}
           />
           <View style={styles.body}>{renderTabContent()}</View>
           <TabBar
             activeTab={activeTab}
-            onSelectTab={(tab) => {
-              setActiveTab(tab);
-              loadAppInitialState();
-            }}
+            onSelectTab={handleNavigateTab}
             bookmarksCount={bookmarksCount}
           />
         </View>
@@ -217,9 +250,11 @@ const MainAppContent: React.FC = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <LanguageProvider>
-        <MainAppContent />
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <MainAppContent />
+        </LanguageProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
@@ -227,11 +262,9 @@ export default function App() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   mainContainer: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   body: {
     flex: 1,
