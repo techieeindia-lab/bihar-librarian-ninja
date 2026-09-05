@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "bihar-librarian-ninja",
+    "name": "Bihar Librarian Ninja",
     "slug": "bihar-librarian-ninja",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,12 +10,15 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.biharlibrarian.examninja",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#1E3A8A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [],
       "predictiveBackGestureEnabled": false
     },
     "web": {
