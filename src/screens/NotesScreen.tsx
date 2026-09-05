@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { useLanguage } from '../localization/LanguageContext';
 import { useTheme, unitColorMap } from '../theme';
 import { STUDY_UNITS } from '../data/studyNotes';
 import { StudyUnit } from '../types';
+import { DataService } from '../services/dataService';
 
 interface NotesScreenProps {
   initialUnitId?: string | null;
@@ -20,12 +21,26 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
 
+  const [units, setUnits] = useState<StudyUnit[]>(STUDY_UNITS);
   const [selectedUnit, setSelectedUnit] = useState<StudyUnit>(
     STUDY_UNITS.find((u) => u.id === initialUnitId) || STUDY_UNITS[0]
   );
   const [expandedTopicId, setExpandedTopicId] = useState<string>(
     selectedUnit.topics[0]?.id || ''
   );
+
+  useEffect(() => {
+    DataService.getStudyUnits().then((data) => {
+      if (data && data.length > 0) {
+        setUnits(data);
+        const match = data.find((u) => u.id === (initialUnitId || selectedUnit.id)) || data[0];
+        setSelectedUnit(match);
+        if (match.topics && match.topics.length > 0) {
+          setExpandedTopicId(match.topics[0].id);
+        }
+      }
+    });
+  }, [initialUnitId]);
 
   const handleSelectUnit = (unit: StudyUnit) => {
     setSelectedUnit(unit);
@@ -62,7 +77,7 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({ initialUnitId }) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.unitSelectorScroll}
       >
-        {STUDY_UNITS.map((unit) => {
+        {units.map((unit) => {
           const isSelected = selectedUnit.id === unit.id;
           const uColor = unitColorMap[unit.unitNumber] || unitColorMap[1];
 

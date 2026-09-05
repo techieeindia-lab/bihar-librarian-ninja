@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,28 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../localization/LanguageContext';
 import { useTheme } from '../theme';
 import { FLASHCARDS } from '../data/flashcards';
+import { Flashcard } from '../types';
+import { DataService } from '../services/dataService';
 
 export const FlashcardsScreen: React.FC = () => {
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
+  const [cards, setCards] = useState<Flashcard[]>(FLASHCARDS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isRevealed, setIsRevealed] = useState(false);
 
-  const currentCard = FLASHCARDS[currentIndex];
+  useEffect(() => {
+    DataService.getFlashcards().then((data) => {
+      if (data && data.length > 0) {
+        setCards(data);
+      }
+    });
+  }, []);
+
+  const currentCard = cards[currentIndex] || cards[0] || FLASHCARDS[0];
 
   const handleNext = () => {
-    if (currentIndex < FLASHCARDS.length - 1) {
+    if (currentIndex < cards.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsRevealed(false);
     }
@@ -87,7 +98,7 @@ export const FlashcardsScreen: React.FC = () => {
           ]}
         >
           <Text style={[styles.counterText, { color: colors.textSecondary }]}>
-            {currentIndex + 1} / {FLASHCARDS.length}
+            {currentIndex + 1} / {cards.length}
           </Text>
         </View>
       </View>
