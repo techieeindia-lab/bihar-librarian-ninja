@@ -14,10 +14,11 @@ import { FlashcardsScreen } from './src/screens/FlashcardsScreen';
 import { SyllabusScreen } from './src/screens/SyllabusScreen';
 import { BookmarksScreen } from './src/screens/BookmarksScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { ActiveTab, ScreenView, MockTest, UserTestAttempt } from './src/types';
+import { ActiveTab, ScreenView, MockTest, UserTestAttempt, Question } from './src/types';
 import { MOCK_TESTS } from './src/data/mockTests';
 import { QUESTIONS } from './src/data/questions';
 import { StorageService } from './src/storage/storageService';
+import { DataService } from './src/services/dataService';
 
 const MainAppContent: React.FC = () => {
   const { t } = useLanguage();
@@ -25,11 +26,22 @@ const MainAppContent: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [screenView, setScreenView] = useState<ScreenView>('main');
+  const [allQuestions, setAllQuestions] = useState<Question[]>(QUESTIONS);
+  const [allMockTests, setAllMockTests] = useState<MockTest[]>(MOCK_TESTS);
   const [activeTest, setActiveTest] = useState<MockTest | null>(null);
   const [testAttempt, setTestAttempt] = useState<UserTestAttempt | null>(null);
   const [bookmarksCount, setBookmarksCount] = useState<number>(0);
   const [streak, setStreak] = useState<number>(1);
   const [selectedNoteUnitId, setSelectedNoteUnitId] = useState<string | null>(null);
+
+  useEffect(() => {
+    DataService.getQuestions().then((qs) => {
+      if (qs && qs.length > 0) setAllQuestions(qs);
+    });
+    DataService.getMockTests().then((ts) => {
+      if (ts && ts.length > 0) setAllMockTests(ts);
+    });
+  }, []);
 
   useEffect(() => {
     loadAppInitialState();
@@ -72,7 +84,7 @@ const MainAppContent: React.FC = () => {
   };
 
   const handleStartTest = (testId: string) => {
-    const test = MOCK_TESTS.find((item) => item.id === testId) || MOCK_TESTS[0];
+    const test = allMockTests.find((item) => item.id === testId) || allMockTests[0];
     setActiveTest(test);
     setScreenView('test_active');
   };
@@ -104,8 +116,8 @@ const MainAppContent: React.FC = () => {
   };
 
   const getActiveTestQuestions = () => {
-    if (!activeTest) return QUESTIONS;
-    return QUESTIONS.filter((q) => activeTest.questionIds.includes(q.id));
+    if (!activeTest) return allQuestions;
+    return allQuestions.filter((q) => activeTest.questionIds.includes(q.id));
   };
 
   const handleNavigateTab = (tab: ActiveTab) => {

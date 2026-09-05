@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { useLanguage } from '../localization/LanguageContext';
 import { useTheme } from '../theme';
 import { MOCK_TESTS } from '../data/mockTests';
 import { MockTest } from '../types';
+import { DataService } from '../services/dataService';
 
 interface TestsScreenProps {
   onStartTest: (testId: string) => void;
@@ -21,8 +22,17 @@ export const TestsScreen: React.FC<TestsScreenProps> = ({ onStartTest }) => {
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
   const [filterType, setFilterType] = useState<'all' | 'full_length' | 'sectional'>('all');
+  const [tests, setTests] = useState<MockTest[]>(MOCK_TESTS);
 
-  const filteredTests = MOCK_TESTS.filter((test) => {
+  useEffect(() => {
+    DataService.getMockTests().then((data) => {
+      if (data && data.length > 0) {
+        setTests(data);
+      }
+    });
+  }, []);
+
+  const filteredTests = tests.filter((test) => {
     if (filterType === 'all') return true;
     return test.type === filterType;
   });
