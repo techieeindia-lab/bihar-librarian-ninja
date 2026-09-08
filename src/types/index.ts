@@ -5,9 +5,22 @@ export interface BilingualText {
   en: string;
 }
 
+export type QuestionCategory =
+  | 'lis_foundations'
+  | 'classification_cataloguing'
+  | 'reference_sources'
+  | 'reference_information_sources'
+  | 'automation_ict'
+  | 'library_automation_ict'
+  | 'management'
+  | 'library_management_governance'
+  | 'bihar_gk'
+  | 'teaching_aptitude'
+  | (string & {});
+
 export interface Question {
   id: string;
-  category: 'lis_foundations' | 'classification_cataloguing' | 'reference_sources' | 'automation_ict' | 'management' | 'bihar_gk' | 'teaching_aptitude';
+  category: QuestionCategory;
   question: BilingualText;
   options: {
     A: BilingualText;
@@ -20,33 +33,57 @@ export interface Question {
   difficulty?: 'easy' | 'medium' | 'hard';
   year?: string;
   sourceExam?: string;
+  unitNumber?: number; // 1 to 5
+  topicId?: string; // e.g. 'u1_t1'
 }
 
-export interface MockTest {
+export interface Quiz {
   id: string;
+  topicId?: string; // 'u1_t1', 'u1_t2', etc.
+  unitNumber?: number; // 1 to 5
+  setNumber?: number; // 1, 2, 3...
+  setName?: BilingualText; // e.g. { hi: 'सेट 1', en: 'Set 1' }
   title: BilingualText;
   subtitle: BilingualText;
-  durationMinutes: number;
-  totalMarks: number;
-  passMarks: number;
+  category: 'daily' | 'foundations' | 'classification' | 'automation' | 'bihar_gk' | 'reference' | 'management' | 'teaching' | 'rapid_fire';
   questionCount: number;
   questionIds: string[];
-  type: 'full_length' | 'sectional' | 'pyq';
+  durationMinutes?: number;
+  rewardXP: number;
   badge?: BilingualText;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  color?: string;
+  icon?: string;
 }
 
-export interface UserTestAttempt {
+export interface UserQuizAttempt {
   id: string;
-  testId: string;
-  testTitle: string;
+  quizId: string;
+  quizTitle: string;
   date: string;
   score: number;
   totalQuestions: number;
   correctCount: number;
   wrongCount: number;
-  skippedCount: number;
+  xpEarned: number;
   timeSpentSeconds: number;
   userAnswers: Record<string, 'A' | 'B' | 'C' | 'D' | null>;
+}
+
+// Backward compatibility alias for any existing references
+export type MockTest = Quiz;
+export type UserTestAttempt = UserQuizAttempt;
+
+export interface OneLiner {
+  id: string;
+  unitNumber?: number; // 1 to 5
+  topicId?: string;    // 'u1_t1' ... 'u5_t5'
+  category: BilingualText;
+  categoryKey: string;
+  topic: BilingualText;
+  statement: BilingualText;
+  tag?: string;
+  isImportant?: boolean;
 }
 
 export interface StudyUnit {
@@ -65,12 +102,30 @@ export interface StudyUnit {
 
 export interface Flashcard {
   id: string;
+  unitNumber?: number; // 1 to 5
+  topicId?: string;    // 'u1_t1' ... 'u5_t5'
   category: BilingualText;
   front: BilingualText;
   back: BilingualText;
   subtext?: BilingualText;
 }
 
-export type ActiveTab = 'home' | 'tests' | 'notes' | 'flashcards' | 'more' | 'syllabus' | 'bookmarks' | 'settings';
-export type ScreenView = 'main' | 'test_active' | 'test_result' | 'note_detail';
+export type ActiveTab =
+  | 'home'
+  | 'quiz'
+  | 'tests' // legacy alias for quiz
+  | 'oneliners'
+  | 'notes'
+  | 'flashcards'
+  | 'more'
+  | 'syllabus'
+  | 'bookmarks'
+  | 'settings';
 
+export type ScreenView =
+  | 'main'
+  | 'quiz_active'
+  | 'quiz_result'
+  | 'test_active'
+  | 'test_result'
+  | 'note_detail';

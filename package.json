@@ -24,7 +24,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "import:content": "node scripts/import_content.mjs",
+    "seed:db": "npx tsx scripts/seed_remote_db.mjs",
+    "sync:local": "node scripts/export_all_to_local.mjs",
+    "verify:content": "node scripts/check_counts.mjs && node scripts/check_integrity.mjs"
   },
   "private": true
 }

@@ -6,31 +6,35 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../localization/LanguageContext';
 import { useTheme, categoryColorMap, difficultyColorMap } from '../theme';
 import { QuestionCard } from '../components/QuestionCard';
-import { QUESTIONS } from '../data/questions';
+import { DataService } from '../services/dataService';
 import { StorageService } from '../storage/storageService';
-import { ActiveTab } from '../types';
+import { ActiveTab, Question, OneLiner } from '../types';
 
 interface HomeScreenProps {
   onNavigateTab: (tab: ActiveTab) => void;
-  onStartMockTest: (testId: string) => void;
+  onStartQuiz: (quizId: string) => void;
   onSelectUnitNote: (unitId: string) => void;
+  onStartMockTest?: (testId: string) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateTab,
-  onStartMockTest,
+  onStartQuiz,
   onSelectUnitNote,
+  onStartMockTest,
 }) => {
   const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
 
-  const [dailyQuestion] = useState(QUESTIONS[0]); // High-yield daily question
+  const [dailyQuestion, setDailyQuestion] = useState<Question | null>(null);
+  const [spotlightOneLiner, setSpotlightOneLiner] = useState<OneLiner | null>(null);
   const [selectedOption, setSelectedOption] = useState<'A' | 'B' | 'C' | 'D' | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -41,6 +45,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     totalQuestionsAttempted: 0,
     bookmarkedCount: 0,
   });
+  const [oneLinersCount, setOneLinersCount] = useState<number>(725);
+  const [flashcardsCount, setFlashcardsCount] = useState<number>(457);
 
   useEffect(() => {
     loadDashboardData();
@@ -49,11 +55,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const loadDashboardData = async () => {
     const userStats = await StorageService.getStats();
     setStats(userStats);
-    const bookmarked = await StorageService.isBookmarked(dailyQuestion.id);
-    setIsBookmarked(bookmarked);
+
+    const [questions, oneLiners, flashcards] = await Promise.all([
+      DataService.getQuestions(),
+      DataService.getOneLiners(),
+      DataService.getFlashcards(),
+    ]);
+
+    if (questions && questions.length > 0) {
+      setDailyQuestion(questions[0]);
+      const bookmarked = await StorageService.isBookmarked(questions[0].id);
+      setIsBookmarked(bookmarked);
+    }
+
+    if (oneLiners && oneLiners.length > 0) {
+      setSpotlightOneLiner(oneLiners[0]);
+      setOneLinersCount(oneLiners.length);
+    }
+
+    if (flashcards && flashcards.length > 0) {
+      setFlashcardsCount(flashcards.length);
+    }
   };
 
   const handleToggleBookmark = async () => {
+    if (!dailyQuestion) return;
     const added = await StorageService.toggleBookmark(dailyQuestion.id);
     setIsBookmarked(added);
     const userStats = await StorageService.getStats();
@@ -161,7 +187,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             {/* CTA Buttons Row */}
             <View style={styles.heroActionRow}>
               <TouchableOpacity
-                onPress={() => onStartMockTest('test_full_1')}
+                onPress={() =>
+                  onStartQuiz
+                    ? onStartQuiz('quiz_daily')
+                    : onStartMockTest && onStartMockTest('quiz_daily')
+                }
                 activeOpacity={0.85}
               >
                 <LinearGradient
@@ -172,18 +202,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 >
                   <Ionicons name="play" size={15} color={heroBtnTextColor} />
                   <Text style={[styles.primaryPillText, { color: heroBtnTextColor }]}>
-                    {t.actionFullMock}
+                    {t.actionDailyQuiz}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.secondaryPillBtn}
-                onPress={() => onNavigateTab('syllabus')}
+                onPress={() => onNavigateTab('oneliners')}
                 activeOpacity={0.8}
               >
-                <Ionicons name="document-text-outline" size={15} color="#FFFFFF" />
-                <Text style={styles.secondaryPillText}>{t.tabSyllabus}</Text>
+                <Ionicons name="sparkles" size={15} color="#FFFFFF" />
+                <Text style={styles.secondaryPillText}>{t.tabOneLiners}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -193,9 +223,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Readiness & Executive Performance Matrix */}
       <View style={styles.sectionWrapper}>
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            {t.quickStatsTitle}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+              {t.quickStatsTitle}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
+              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981', marginRight: 4 }} />
+              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#10B981' }}>
+                Supabase Live
+              </Text>
+            </View>
+          </View>
           <View
             style={[
               styles.targetChip,
@@ -213,7 +251,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
 
         <View style={styles.statsGrid}>
-          {/* Card 1: Tests Attempted */}
+          {/* Card 1: Quizzes Solved */}
           <TouchableOpacity
             style={[
               styles.statCard,
@@ -222,7 +260,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 borderColor: colors.border,
               },
             ]}
-            onPress={() => onNavigateTab('tests')}
+            onPress={() => onNavigateTab('quiz')}
             activeOpacity={0.8}
           >
             <View
@@ -304,83 +342,159 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </View>
 
       {/* Daily Challenge Question */}
-      <View style={styles.sectionWrapper}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.dailyHeaderLeft}>
-            <Ionicons name="flash" size={18} color="#EA580C" />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              {t.dailyQuestionTitle}
-            </Text>
+      {dailyQuestion && (
+        <View style={styles.sectionWrapper}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.dailyHeaderLeft}>
+              <Ionicons name="flash" size={18} color="#EA580C" />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                {t.dailyQuestionTitle}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.dailyBadge,
+                {
+                  backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                  borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FFEDD5',
+                },
+              ]}
+            >
+              <Text style={styles.dailyBadgeText}>{t.dailyQuestionBadge}</Text>
+            </View>
           </View>
+
+          <QuestionCard
+            question={dailyQuestion}
+            selectedOption={selectedOption}
+            onSelectOption={(opt) => setSelectedOption(opt)}
+            showSolution={isAnswerChecked}
+            isBookmarked={isBookmarked}
+            onToggleBookmark={handleToggleBookmark}
+          />
+
+          <View style={styles.dailyActionRow}>
+            {!isAnswerChecked ? (
+              <TouchableOpacity
+                style={[
+                  styles.checkAnswerPill,
+                  {
+                    backgroundColor: selectedOption ? colors.primary : (isDark ? '#262626' : '#E4E4E7'),
+                  },
+                ]}
+                disabled={!selectedOption}
+                onPress={() => setIsAnswerChecked(true)}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.checkAnswerPillText,
+                    {
+                      color: selectedOption ? colors.textOnPrimary : colors.textMuted,
+                    },
+                  ]}
+                >
+                  {t.checkAnswer}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.resetDailyPill,
+                  {
+                    backgroundColor: colors.canvasSubtle,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedOption(null);
+                  setIsAnswerChecked(false);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh" size={15} color={colors.textPrimary} />
+                <Text style={[styles.resetDailyText, { color: colors.textPrimary }]}>
+                  {language === 'hi' ? 'पुनः प्रयास करें (Reset)' : 'Reset Challenge'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Featured Today's One-Liner Spotlight */}
+      {spotlightOneLiner && (
+        <View style={styles.sectionWrapper}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.dailyHeaderLeft}>
+              <Ionicons name="sparkles" size={18} color="#EA580C" />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                {language === 'hi' ? 'आज का वन-लाइनर तथ्य' : "Today's One-Liner Fact"}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.dailyBadge,
+                {
+                  backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                  borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FFEDD5',
+                },
+              ]}
+            >
+              <Text style={styles.dailyBadgeText}>{t.highYieldBadge}</Text>
+            </View>
+          </View>
+
           <View
             style={[
-              styles.dailyBadge,
+              styles.oneLinerSpotlightCard,
               {
-                backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
-                borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FFEDD5',
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderLeftColor: '#EA580C',
+                borderLeftWidth: 4,
               },
             ]}
           >
-            <Text style={styles.dailyBadgeText}>{t.dailyQuestionBadge}</Text>
+            <View style={styles.spotlightTopRow}>
+              <View style={[styles.spotlightCatBadge, { backgroundColor: colors.canvasSubtle }]}>
+                <Text style={[styles.spotlightCatText, { color: colors.textSecondary }]}>
+                  {spotlightOneLiner.topic[language]}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  Share.share({
+                    message: `📌 *${spotlightOneLiner.topic[language]}*\n\n"${spotlightOneLiner.statement[language]}"\n\n🎯 बिहार लाइब्रेरियन परीक्षा 2026 - Bihar Librarian Ninja App 📚`,
+                  });
+                }}
+                style={styles.spotlightShareBtn}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-whatsapp" size={14} color="#166534" />
+                <Text style={styles.spotlightShareText}>Share</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.spotlightStatement, { color: colors.textPrimary }]}>
+              {spotlightOneLiner.statement[language]}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.spotlightFooterBtn, { borderTopColor: colors.border }]}
+              onPress={() => onNavigateTab('oneliners')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.spotlightFooterText, { color: colors.primary }]}>
+                {language === 'hi'
+                  ? `सभी ${oneLinersCount}+ महत्वपूर्ण वन-लाइनर पढ़ें`
+                  : `Explore All ${oneLinersCount}+ One-Liners`}
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+            </TouchableOpacity>
           </View>
         </View>
-
-        <QuestionCard
-          question={dailyQuestion}
-          selectedOption={selectedOption}
-          onSelectOption={(opt) => setSelectedOption(opt)}
-          showSolution={isAnswerChecked}
-          isBookmarked={isBookmarked}
-          onToggleBookmark={handleToggleBookmark}
-        />
-
-        <View style={styles.dailyActionRow}>
-          {!isAnswerChecked ? (
-            <TouchableOpacity
-              style={[
-                styles.checkAnswerPill,
-                {
-                  backgroundColor: selectedOption ? colors.primary : (isDark ? '#262626' : '#E4E4E7'),
-                },
-              ]}
-              disabled={!selectedOption}
-              onPress={() => setIsAnswerChecked(true)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.checkAnswerPillText,
-                  {
-                    color: selectedOption ? colors.textOnPrimary : colors.textMuted,
-                  },
-                ]}
-              >
-                {t.checkAnswer}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[
-                styles.resetDailyPill,
-                {
-                  backgroundColor: colors.canvasSubtle,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => {
-                setSelectedOption(null);
-                setIsAnswerChecked(false);
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="refresh" size={15} color={colors.textPrimary} />
-              <Text style={[styles.resetDailyText, { color: colors.textPrimary }]}>
-                {language === 'hi' ? 'पुनः प्रयास करें (Reset)' : 'Reset Challenge'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      )}
 
       {/* Core Preparation Pillars (Bento Grid Architecture) */}
       <View style={styles.sectionWrapper}>
@@ -397,7 +511,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
 
         <View style={styles.bentoContainer}>
-          {/* Bento Tile 1: CBT Mock Tests - Full Width Featured Simulator Tile */}
+          {/* Bento Tile 1: Daily & Topic Quizzes - Full Width Featured Hub */}
           <TouchableOpacity
             style={[
               styles.bentoHeroCard,
@@ -406,34 +520,34 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 borderColor: colors.border,
               },
             ]}
-            onPress={() => onNavigateTab('tests')}
+            onPress={() => onNavigateTab('quiz')}
             activeOpacity={0.85}
           >
-            {/* Top Bar with Simulator Tag & Live Spec Chips */}
+            {/* Top Bar with Quiz Tag & Live Spec Chips */}
             <View style={styles.bentoHeroTopBar}>
               <View
                 style={[
                   styles.bentoTagBadge,
                   {
-                    backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF',
-                    borderColor: isDark ? 'rgba(0, 112, 243, 0.35)' : '#BFDBFE',
+                    backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                    borderColor: isDark ? 'rgba(234, 88, 12, 0.35)' : '#FED7AA',
                   },
                 ]}
               >
-                <View style={[styles.pulseDot, { backgroundColor: '#0070F3' }]} />
-                <Text style={[styles.bentoTagText, { color: '#0070F3' }]}>
-                  CBT EXAM SIMULATOR
+                <View style={[styles.pulseDot, { backgroundColor: '#EA580C' }]} />
+                <Text style={[styles.bentoTagText, { color: '#EA580C' }]}>
+                  INTERACTIVE QUIZ HUB
                 </Text>
               </View>
 
               <View style={styles.bentoChipRow}>
                 <View style={[styles.microChip, { backgroundColor: colors.canvasSubtle, borderColor: colors.border }]}>
-                  <Ionicons name="timer-outline" size={12} color={colors.textSecondary} />
-                  <Text style={[styles.microChipText, { color: colors.textSecondary }]}>120 Mins</Text>
+                  <Ionicons name="help-circle-outline" size={12} color={colors.textSecondary} />
+                  <Text style={[styles.microChipText, { color: colors.textSecondary }]}>10 Qs</Text>
                 </View>
                 <View style={[styles.microChip, { backgroundColor: colors.canvasSubtle, borderColor: colors.border }]}>
-                  <Ionicons name="trophy-outline" size={12} color={colors.textSecondary} />
-                  <Text style={[styles.microChipText, { color: colors.textSecondary }]}>100 Marks</Text>
+                  <Ionicons name="flash" size={12} color="#EA580C" />
+                  <Text style={[styles.microChipText, { color: '#EA580C' }]}>+50 XP</Text>
                 </View>
               </View>
             </View>
@@ -443,22 +557,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 style={[
                   styles.bentoHeroIconWrapper,
                   {
-                    backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF',
-                    borderColor: isDark ? 'rgba(0, 112, 243, 0.3)' : '#BFDBFE',
+                    backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                    borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FED7AA',
                   },
                 ]}
               >
-                <Ionicons name="newspaper" size={26} color="#0070F3" />
+                <Ionicons name="trophy" size={26} color="#EA580C" />
               </View>
 
               <View style={styles.bentoHeroText}>
                 <Text style={[styles.bentoHeroTitle, { color: colors.textPrimary }]}>
-                  {t.actionFullMock}
+                  {t.actionDailyQuiz}
                 </Text>
                 <Text style={[styles.bentoHeroDesc, { color: colors.textSecondary }]}>
                   {language === 'hi'
-                    ? '100 प्रश्न • वास्तविक BSEB LET परीक्षा सॉफ्टवेयर जैसा अनुभव'
-                    : '100 Questions • Simulated CBT examination environment'}
+                    ? '10 प्रश्न • तुरंत व्याख्या • स्कोर शेयर करके दोस्तों को चुनौती दें'
+                    : '10 Questions • Instant explanations • Challenge friends on WhatsApp'}
                 </Text>
               </View>
             </View>
@@ -467,25 +581,80 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <View style={[styles.bentoHeroStatus, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5' }]}>
                 <Ionicons name="checkmark-circle" size={13} color="#10B981" />
                 <Text style={[styles.bentoHeroStatusText, { color: '#10B981' }]}>
-                  {language === 'hi' ? 'तत्काल स्कोरकार्ड व विश्लेषण' : 'Instant Scorecard & Analysis'}
+                  {language === 'hi' ? 'तुरंत सही/गलत फीडबैक' : 'Instant Feedback Mode'}
                 </Text>
               </View>
 
               <LinearGradient
-                colors={['#0070F3', '#0052CC']}
+                colors={['#EA580C', '#C2410C']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.bentoHeroBtn}
               >
-                <Text style={styles.bentoHeroBtnText}>{t.startTest}</Text>
+                <Text style={styles.bentoHeroBtnText}>{t.playQuiz}</Text>
                 <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
               </LinearGradient>
             </View>
           </TouchableOpacity>
 
-          {/* Bento Split Row: Notes (Emerald) & Flashcards (Amber) */}
+          {/* Bento Split Row 1: One-Liners (Amber) & Study Notes (Emerald) */}
           <View style={styles.bentoSplitRow}>
-            {/* Tile 2: Study Notes Tower */}
+            {/* Tile 2: One-Liners Tower */}
+            <TouchableOpacity
+              style={[
+                styles.bentoTowerCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderTopColor: '#0070F3',
+                  borderTopWidth: 3,
+                },
+              ]}
+              onPress={() => onNavigateTab('oneliners')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.bentoTowerTop}>
+                <View
+                  style={[
+                    styles.bentoTowerIcon,
+                    {
+                      backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF',
+                      borderColor: isDark ? 'rgba(0, 112, 243, 0.3)' : '#BFDBFE',
+                    },
+                  ]}
+                >
+                  <Ionicons name="sparkles" size={22} color="#0070F3" />
+                </View>
+                <View
+                  style={[
+                    styles.bentoBadgePill,
+                    { backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF' },
+                  ]}
+                >
+                  <Text style={[styles.bentoBadgePillText, { color: '#0070F3' }]}>
+                    {oneLinersCount}+ FACTS
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={[styles.bentoTowerTitle, { color: colors.textPrimary }]}>
+                {t.tabOneLiners}
+              </Text>
+              <Text style={[styles.bentoTowerDesc, { color: colors.textSecondary }]}>
+                {language === 'hi'
+                  ? 'परीक्षा के अचूक तथ्य, वर्ष, नियम व कोड्स'
+                  : 'High-yield exam facts, dates & rules'}
+              </Text>
+
+              <View style={styles.bentoTowerFooter}>
+                <Text style={[styles.bentoLinkText, { color: '#0070F3' }]}>
+                  {language === 'hi' ? 'तथ्य पढ़ें' : 'Read Facts'}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color="#0070F3" />
+              </View>
+            </TouchableOpacity>
+
+            {/* Tile 3: Study Notes Tower */}
             <TouchableOpacity
               style={[
                 styles.bentoTowerCard,
@@ -517,7 +686,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' },
                   ]}
                 >
-                  <Text style={[styles.bentoBadgePillText, { color: '#10B981' }]}>7 UNITS</Text>
+                  <Text style={[styles.bentoBadgePillText, { color: '#10B981' }]}>5 UNITS • 29 TOPICS</Text>
                 </View>
               </View>
 
@@ -526,8 +695,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </Text>
               <Text style={[styles.bentoTowerDesc, { color: colors.textSecondary }]}>
                 {language === 'hi'
-                  ? 'DDC/CC वर्गीकरण, रंगनाथन व LIS थ्योरी'
-                  : 'DDC/CC rules, 5 Laws & complete LIS theory'}
+                  ? 'DDC/CC, प्रबंधन, 5 सूत्र व सम्पूर्ण थ्योरी'
+                  : 'DDC/CC, Management, 5 Laws & theory'}
               </Text>
 
               <View style={styles.bentoTowerFooter}>
@@ -537,8 +706,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Ionicons name="chevron-forward" size={14} color="#10B981" />
               </View>
             </TouchableOpacity>
+          </View>
 
-            {/* Tile 3: Flashcards Tower */}
+          {/* Bento Split Row 2: Flashcards (Purple) & Syllabus (Indigo) */}
+          <View style={styles.bentoSplitRow}>
+            {/* Tile 4: Flashcards */}
             <TouchableOpacity
               style={[
                 styles.bentoTowerCard,
@@ -570,7 +742,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     { backgroundColor: isDark ? 'rgba(245, 166, 35, 0.15)' : '#FFFBEB' },
                   ]}
                 >
-                  <Text style={[styles.bentoBadgePillText, { color: '#F59E0B' }]}>RECALL</Text>
+                  <Text style={[styles.bentoBadgePillText, { color: '#F59E0B' }]}>
+                    {flashcardsCount}+ CARDS
+                  </Text>
                 </View>
               </View>
 
@@ -579,7 +753,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </Text>
               <Text style={[styles.bentoTowerDesc, { color: colors.textSecondary }]}>
                 {language === 'hi'
-                  ? 'महत्वपूर्ण वर्ष, नियम, संस्थापक व कोड'
+                  ? 'रंगनाथन के नियम, वर्ष व DDC वर्गीकरण'
                   : 'Key dates, editions, rules & founders'}
               </Text>
 
@@ -590,69 +764,60 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <Ionicons name="chevron-forward" size={14} color="#F59E0B" />
               </View>
             </TouchableOpacity>
-          </View>
 
-          {/* Bento Tile 4: Official Syllabus & Blueprint - Horizontal Ribbon Banner */}
-          <TouchableOpacity
-            style={[
-              styles.bentoBannerCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-                borderLeftColor: '#8B5CF6',
-                borderLeftWidth: 4,
-              },
-            ]}
-            onPress={() => onNavigateTab('syllabus')}
-            activeOpacity={0.8}
-          >
-            <View
+            {/* Tile 5: Official Syllabus */}
+            <TouchableOpacity
               style={[
-                styles.bentoBannerIcon,
+                styles.bentoTowerCard,
                 {
-                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#F5F3FF',
-                  borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderTopColor: '#8B5CF6',
+                  borderTopWidth: 3,
                 },
               ]}
+              onPress={() => onNavigateTab('syllabus')}
+              activeOpacity={0.8}
             >
-              <Ionicons name="map-outline" size={24} color="#8B5CF6" />
-            </View>
-
-            <View style={styles.bentoBannerContent}>
-              <View style={styles.bentoBannerTagRow}>
+              <View style={styles.bentoTowerTop}>
                 <View
                   style={[
-                    styles.bentoMiniBadge,
+                    styles.bentoTowerIcon,
+                    {
+                      backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#F5F3FF',
+                      borderColor: isDark ? 'rgba(139, 92, 246, 0.3)' : '#DDD6FE',
+                    },
+                  ]}
+                >
+                  <Ionicons name="map-outline" size={22} color="#8B5CF6" />
+                </View>
+                <View
+                  style={[
+                    styles.bentoBadgePill,
                     { backgroundColor: isDark ? 'rgba(139, 92, 246, 0.15)' : '#F5F3FF' },
                   ]}
                 >
-                  <Text style={[styles.bentoMiniBadgeText, { color: '#8B5CF6' }]}>OFFICIAL BLUEPRINT</Text>
+                  <Text style={[styles.bentoBadgePillText, { color: '#8B5CF6' }]}>PATTERN</Text>
                 </View>
-                <Text style={[styles.bentoBannerExtra, { color: colors.textMuted }]}>BSEB 2025-26</Text>
               </View>
 
-              <Text style={[styles.bentoBannerTitle, { color: colors.textPrimary }]}>
-                {language === 'hi' ? 'पाठ्यक्रम एवं परीक्षा पैटर्न' : 'Syllabus & Exam Pattern'}
+              <Text style={[styles.bentoTowerTitle, { color: colors.textPrimary }]}>
+                {t.tabSyllabus}
               </Text>
-              <Text style={[styles.bentoBannerDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+              <Text style={[styles.bentoTowerDesc, { color: colors.textSecondary }]}>
                 {language === 'hi'
-                  ? 'प्रश्न वितरण, अर्हता अंक (Cut-off) एवं अंकन पद्धति'
-                  : 'Paper 1 & 2 weightage, cutoff criteria & negative marking'}
+                  ? 'BSEB LET व BPSC अंकन व अर्हता'
+                  : 'Exam scheme & qualifying marks'}
               </Text>
-            </View>
 
-            <View
-              style={[
-                styles.bentoBannerAction,
-                {
-                  backgroundColor: isDark ? 'rgba(139, 92, 246, 0.12)' : '#F5F3FF',
-                  borderColor: isDark ? 'rgba(139, 92, 246, 0.25)' : '#DDD6FE',
-                },
-              ]}
-            >
-              <Ionicons name="arrow-forward" size={15} color="#8B5CF6" />
-            </View>
-          </TouchableOpacity>
+              <View style={styles.bentoTowerFooter}>
+                <Text style={[styles.bentoLinkText, { color: '#8B5CF6' }]}>
+                  {language === 'hi' ? 'सिलेबस देखें' : 'View Blueprint'}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color="#8B5CF6" />
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -1310,5 +1475,57 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     lineHeight: 17,
+  },
+  oneLinerSpotlightCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginTop: 4,
+  },
+  spotlightTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  spotlightCatBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  spotlightCatText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  spotlightShareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  spotlightShareText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#166534',
+  },
+  spotlightStatement: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  spotlightFooterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    marginTop: 10,
+    paddingTop: 8,
+  },
+  spotlightFooterText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

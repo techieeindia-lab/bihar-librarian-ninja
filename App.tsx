@@ -6,17 +6,16 @@ import { LanguageProvider, useLanguage } from './src/localization/LanguageContex
 import { Header } from './src/components/Header';
 import { TabBar } from './src/components/TabBar';
 import { HomeScreen } from './src/screens/HomeScreen';
-import { TestsScreen } from './src/screens/TestsScreen';
-import { TestActiveScreen } from './src/screens/TestActiveScreen';
-import { ResultScreen } from './src/screens/ResultScreen';
+import { QuizScreen } from './src/screens/QuizScreen';
+import { QuizActiveScreen } from './src/screens/QuizActiveScreen';
+import { QuizResultScreen } from './src/screens/QuizResultScreen';
+import { OneLinersScreen } from './src/screens/OneLinersScreen';
 import { NotesScreen } from './src/screens/NotesScreen';
 import { FlashcardsScreen } from './src/screens/FlashcardsScreen';
 import { SyllabusScreen } from './src/screens/SyllabusScreen';
 import { BookmarksScreen } from './src/screens/BookmarksScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { ActiveTab, ScreenView, MockTest, UserTestAttempt, Question } from './src/types';
-import { MOCK_TESTS } from './src/data/mockTests';
-import { QUESTIONS } from './src/data/questions';
+import { ActiveTab, ScreenView, Quiz, UserQuizAttempt, Question } from './src/types';
 import { StorageService } from './src/storage/storageService';
 import { DataService } from './src/services/dataService';
 
@@ -26,10 +25,10 @@ const MainAppContent: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [screenView, setScreenView] = useState<ScreenView>('main');
-  const [allQuestions, setAllQuestions] = useState<Question[]>(QUESTIONS);
-  const [allMockTests, setAllMockTests] = useState<MockTest[]>(MOCK_TESTS);
-  const [activeTest, setActiveTest] = useState<MockTest | null>(null);
-  const [testAttempt, setTestAttempt] = useState<UserTestAttempt | null>(null);
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
+  const [allQuizzes, setAllQuizzes] = useState<Quiz[]>([]);
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
+  const [quizAttempt, setQuizAttempt] = useState<UserQuizAttempt | null>(null);
   const [bookmarksCount, setBookmarksCount] = useState<number>(0);
   const [streak, setStreak] = useState<number>(1);
   const [selectedNoteUnitId, setSelectedNoteUnitId] = useState<string | null>(null);
@@ -38,8 +37,8 @@ const MainAppContent: React.FC = () => {
     DataService.getQuestions().then((qs) => {
       if (qs && qs.length > 0) setAllQuestions(qs);
     });
-    DataService.getMockTests().then((ts) => {
-      if (ts && ts.length > 0) setAllMockTests(ts);
+    DataService.getQuizzes().then((qz) => {
+      if (qz && qz.length > 0) setAllQuizzes(qz);
     });
   }, []);
 
@@ -47,14 +46,13 @@ const MainAppContent: React.FC = () => {
     loadAppInitialState();
 
     const backAction = () => {
-      if (screenView === 'test_active') {
-        setScreenView('main');
-        setActiveTest(null);
+      if (screenView === 'quiz_active') {
+        // Handled inside QuizActiveScreen with exit confirmation modal
         return true;
       }
-      if (screenView === 'test_result') {
+      if (screenView === 'quiz_result') {
         setScreenView('main');
-        setActiveTab('tests');
+        setActiveTab('quiz');
         return true;
       }
       if (activeTab === 'bookmarks' || activeTab === 'syllabus' || activeTab === 'settings') {
@@ -83,31 +81,31 @@ const MainAppContent: React.FC = () => {
     setBookmarksCount(bookmarks.length);
   };
 
-  const handleStartTest = (testId: string) => {
-    const test = allMockTests.find((item) => item.id === testId) || allMockTests[0];
-    setActiveTest(test);
-    setScreenView('test_active');
+  const handleStartQuiz = (quizId: string) => {
+    const quiz = allQuizzes.find((item) => item.id === quizId) || allQuizzes[0];
+    setActiveQuiz(quiz);
+    setScreenView('quiz_active');
   };
 
-  const handleFinishTest = (attempt: UserTestAttempt) => {
-    setTestAttempt(attempt);
-    setScreenView('test_result');
+  const handleFinishQuiz = (attempt: UserQuizAttempt) => {
+    setQuizAttempt(attempt);
+    setScreenView('quiz_result');
   };
 
-  const handleReattemptTest = () => {
-    if (activeTest) {
-      setScreenView('test_active');
+  const handleReattemptQuiz = () => {
+    if (activeQuiz) {
+      setScreenView('quiz_active');
     } else {
       setScreenView('main');
-      setActiveTab('tests');
+      setActiveTab('quiz');
     }
   };
 
-  const handleBackToTests = () => {
-    setActiveTest(null);
-    setTestAttempt(null);
+  const handleBackToQuizzes = () => {
+    setActiveQuiz(null);
+    setQuizAttempt(null);
     setScreenView('main');
-    setActiveTab('tests');
+    setActiveTab('quiz');
   };
 
   const handleSelectUnitNote = (unitId: string) => {
@@ -115,14 +113,28 @@ const MainAppContent: React.FC = () => {
     setActiveTab('notes');
   };
 
-  const getActiveTestQuestions = () => {
-    if (!activeTest) return allQuestions;
-    return allQuestions.filter((q) => activeTest.questionIds.includes(q.id));
+  const getActiveQuizQuestions = (): Question[] => {
+    if (!activeQuiz) return allQuestions;
+    const questions = allQuestions.filter((q) => activeQuiz.questionIds.includes(q.id));
+    if (questions.length > 0) return questions;
+
+    // Smart fallback for topic quizzes based on unit ID
+    let matchingCat: Question['category'] = 'lis_foundations';
+    if (activeQuiz.id.includes('_u2_')) matchingCat = 'classification_cataloguing';
+    else if (activeQuiz.id.includes('_u3_')) matchingCat = 'reference_sources';
+    else if (activeQuiz.id.includes('_u4_')) matchingCat = 'management';
+    else if (activeQuiz.id.includes('_u5_t5')) matchingCat = 'teaching_aptitude';
+    else if (activeQuiz.id.includes('_u5_')) matchingCat = 'automation_ict';
+    else if (activeQuiz.id.includes('_u1_t5')) matchingCat = 'bihar_gk';
+
+    const catQuestions = allQuestions.filter((q) => q.category === matchingCat);
+    return catQuestions.length > 0
+      ? catQuestions
+      : allQuestions.slice(0, activeQuiz.questionCount || 5);
   };
 
   const handleNavigateTab = (tab: ActiveTab) => {
     setActiveTab(tab);
-    loadAppInitialState();
   };
 
   // Render active main content
@@ -132,14 +144,22 @@ const MainAppContent: React.FC = () => {
         return (
           <HomeScreen
             onNavigateTab={handleNavigateTab}
-            onStartMockTest={handleStartTest}
+            onStartQuiz={handleStartQuiz}
             onSelectUnitNote={handleSelectUnitNote}
           />
         );
-      case 'tests':
-        return <TestsScreen onStartTest={handleStartTest} />;
+      case 'quiz':
+      case 'tests': // backward-compatible alias
+        return <QuizScreen onStartQuiz={handleStartQuiz} />;
+      case 'oneliners':
+        return <OneLinersScreen />;
       case 'notes':
-        return <NotesScreen initialUnitId={selectedNoteUnitId} />;
+        return (
+          <NotesScreen
+            initialUnitId={selectedNoteUnitId}
+            onStartQuiz={handleStartQuiz}
+          />
+        );
       case 'flashcards':
         return <FlashcardsScreen />;
       case 'more':
@@ -158,7 +178,7 @@ const MainAppContent: React.FC = () => {
         return (
           <HomeScreen
             onNavigateTab={handleNavigateTab}
-            onStartMockTest={handleStartTest}
+            onStartQuiz={handleStartQuiz}
             onSelectUnitNote={handleSelectUnitNote}
           />
         );
@@ -169,8 +189,11 @@ const MainAppContent: React.FC = () => {
     switch (activeTab) {
       case 'home':
         return t.appName;
+      case 'quiz':
       case 'tests':
-        return t.tabTests;
+        return t.tabQuiz;
+      case 'oneliners':
+        return t.tabOneLiners;
       case 'notes':
         return t.tabNotes;
       case 'flashcards':
@@ -206,33 +229,33 @@ const MainAppContent: React.FC = () => {
         backgroundColor={colors.canvasElevated}
       />
 
-      {/* When taking active test */}
-      {screenView === 'test_active' && activeTest && (
-        <TestActiveScreen
-          test={activeTest}
-          questions={getActiveTestQuestions()}
-          onFinishTest={handleFinishTest}
-          onExitTest={() => {
-            setActiveTest(null);
+      {/* When taking active quiz */}
+      {screenView === 'quiz_active' && activeQuiz && (
+        <QuizActiveScreen
+          quiz={activeQuiz}
+          questions={getActiveQuizQuestions()}
+          onFinishQuiz={handleFinishQuiz}
+          onExitQuiz={() => {
+            setActiveQuiz(null);
             setScreenView('main');
           }}
         />
       )}
 
-      {/* When viewing test scorecard & solutions */}
-      {screenView === 'test_result' && testAttempt && (
+      {/* When viewing quiz scorecard & solutions */}
+      {screenView === 'quiz_result' && quizAttempt && (
         <View style={[styles.mainContainer, { backgroundColor: colors.canvas }]}>
           <Header
-            title={t.testResultTitle}
+            title={t.quizResultTitle}
             showBack={true}
-            onBack={handleBackToTests}
+            onBack={handleBackToQuizzes}
             streak={streak}
           />
-          <ResultScreen
-            attempt={testAttempt}
-            questions={getActiveTestQuestions()}
-            onReattempt={handleReattemptTest}
-            onBackToTests={handleBackToTests}
+          <QuizResultScreen
+            attempt={quizAttempt}
+            questions={getActiveQuizQuestions()}
+            onReattempt={handleReattemptQuiz}
+            onBackToQuizzes={handleBackToQuizzes}
           />
         </View>
       )}

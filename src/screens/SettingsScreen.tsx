@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Share,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
 import { useTheme, ThemeMode } from '../theme';
 import { ActiveTab } from '../types';
+import { DataService, DbStatusInfo } from '../services/dataService';
 
 interface SettingsScreenProps {
   onNavigateTab?: (tab: ActiveTab) => void;
@@ -25,13 +27,54 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const { language, setLanguage, t } = useLanguage();
   const { colors, isDark, themeMode, setThemeMode } = useTheme();
 
+  const [dbInfo, setDbInfo] = useState<DbStatusInfo | null>(null);
+  const [isCheckingDb, setIsCheckingDb] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    checkDb();
+  }, []);
+
+  const checkDb = async () => {
+    setIsCheckingDb(true);
+    try {
+      const info = await DataService.checkConnection();
+      setDbInfo(info);
+    } catch (e) {}
+    setIsCheckingDb(false);
+  };
+
+  const handleSyncNow = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await DataService.syncAllFromDatabase();
+      if (res.success) {
+        setSyncMessage(
+          language === 'hi'
+            ? `✓ सिंक पूर्ण: ${res.counts.quizzes} क्विज़, ${res.counts.oneLiners} तथ्य, ${res.counts.units} यूनिट्स`
+            : `✓ Synced: ${res.counts.quizzes} Quizzes, ${res.counts.oneLiners} Facts, ${res.counts.units} Units`
+        );
+        await checkDb();
+      } else {
+        setSyncMessage(
+          language === 'hi' ? `✗ सिंक त्रुटि: ${res.error}` : `✗ Sync failed: ${res.error}`
+        );
+      }
+    } catch (e: any) {
+      setSyncMessage(`✗ Error: ${e?.message || 'Sync failed'}`);
+    }
+    setIsSyncing(false);
+  };
+
   const handleShareApp = async () => {
     try {
       await Share.share({
         message:
           language === 'hi'
-            ? 'बिहार विद्यालय पुस्तकालयाध्यक्ष परीक्षा 2026 की बेहतरीन तैयारी के लिए "Bihar Librarian Ninja" ऐप डाउनलोड करें! इसमें 7 सम्पूर्ण नोट्स यूनिट, रंगनाथन के नियम, DDC/CC वर्गीकरण और फुल CBT मॉक टेस्ट उपलब्ध हैं।'
-            : 'Download Bihar Librarian Ninja app for Bihar School Librarian & BPSC recruitment exam prep! Includes bilingual notes, DDC/CC rules, and full CBT mock tests.',
+            ? 'बिहार विद्यालय पुस्तकालयाध्यक्ष परीक्षा 2026 की बेहतरीन तैयारी के लिए "Bihar Librarian Ninja" ऐप डाउनलोड करें! इसमें 5 सम्पूर्ण नोट्स यूनिट (29 टॉपिक्स), 725+ वन-लाइनर, 450+ फ्लैशकार्ड्स, DDC/CC वर्गीकरण और फुल CBT मॉक टेस्ट उपलब्ध हैं।'
+            : 'Download Bihar Librarian Ninja app for Bihar School Librarian & BPSC recruitment exam prep! Includes 5 bilingual study units (29 topics), 725+ one-liners, 450+ flashcards, DDC/CC rules, and full CBT mock tests.',
       });
     } catch (e) {}
   };
@@ -43,6 +86,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const handleOpenBpsc = () => {
     Linking.openURL('https://bpsc.bih.nic.in').catch(() => {});
   };
+
+  const flashcardCount = dbInfo?.counts?.flashcards || 457;
+  const oneLinerCount = dbInfo?.counts?.oneLiners || 725;
 
   const themeOptions: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { mode: 'system', label: t.themeSystem, icon: 'phone-portrait-outline' },
@@ -65,9 +111,69 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </Text>
       </View>
 
-      {/* Quick Launch Cards (Bookmarks & Syllabus) */}
+      {/* Quick Launch Cards */}
       {onNavigateTab && (
-        <View style={styles.quickLaunchRow}>
+        <View style={styles.quickLaunchGrid}>
+          {/* Flashcards */}
+          <TouchableOpacity
+            style={[
+              styles.quickLaunchCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => onNavigateTab('flashcards')}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.quickLaunchIcon,
+                {
+                  backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF',
+                },
+              ]}
+            >
+              <Ionicons name="flash" size={20} color="#0070F3" />
+            </View>
+            <Text style={[styles.quickLaunchTitle, { color: colors.textPrimary }]}>
+              {t.tabCards}
+            </Text>
+            <Text style={[styles.quickLaunchSubtitle, { color: colors.textSecondary }]}>
+              {language === 'hi' ? `${flashcardCount} रिवीजन कार्ड` : `${flashcardCount} Flashcards`}
+            </Text>
+          </TouchableOpacity>
+
+          {/* One-Liners */}
+          <TouchableOpacity
+            style={[
+              styles.quickLaunchCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => onNavigateTab('oneliners')}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.quickLaunchIcon,
+                {
+                  backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                },
+              ]}
+            >
+              <Ionicons name="sparkles" size={20} color="#EA580C" />
+            </View>
+            <Text style={[styles.quickLaunchTitle, { color: colors.textPrimary }]}>
+              {t.tabOneLiners}
+            </Text>
+            <Text style={[styles.quickLaunchSubtitle, { color: colors.textSecondary }]}>
+              {language === 'hi' ? `${oneLinerCount} अचूक तथ्य` : `${oneLinerCount} High-Yield`}
+            </Text>
+          </TouchableOpacity>
+
           {/* Bookmarks */}
           <TouchableOpacity
             style={[
@@ -99,7 +205,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               {t.tabBookmarks}
             </Text>
             <Text style={[styles.quickLaunchSubtitle, { color: colors.textSecondary }]}>
-              {bookmarksCount} {language === 'hi' ? 'सहेजे गए प्रश्न' : 'Saved Questions'}
+              {bookmarksCount} {language === 'hi' ? 'सहेजे प्रश्न' : 'Saved Qs'}
             </Text>
           </TouchableOpacity>
 
@@ -280,6 +386,108 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </View>
       </View>
 
+      {/* Supabase Cloud Database & Live Sync Monitor */}
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="cloud-done" size={18} color="#10B981" />
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+              {language === 'hi' ? 'सुपाबेस क्लाउड डेटाबेस' : 'Supabase Cloud DB'}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: dbInfo?.connected ? '#10B981' : '#F59E0B', marginRight: 5 }} />
+            <Text style={{ fontSize: 10, fontWeight: '700', color: dbInfo?.connected ? '#10B981' : '#F59E0B' }}>
+              {isCheckingDb ? 'Checking...' : dbInfo?.connected ? 'Live Connected' : 'Offline Mode'}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10 }}>
+          {language === 'hi'
+            ? 'ऐप का सारा कंटेंट (क्विज़, वन-लाइनर, नोट्स, प्रश्न) सीधे सुपाबेस डेटाबेस से सिंक होता है।'
+            : 'All quizzes, one-liners, study notes & questions sync directly from Supabase.'}
+        </Text>
+
+        {/* Database Live Stats Grid */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'रैपिड क्विज़' : 'Rapid Quizzes'}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+              {dbInfo?.counts.quizzes ?? '...'} {language === 'hi' ? 'क्विज़' : 'items'}
+            </Text>
+          </View>
+          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'वन-लाइनर तथ्य' : 'One-Liners'}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+              {dbInfo?.counts.oneLiners ?? '...'} {language === 'hi' ? 'तथ्य' : 'facts'}
+            </Text>
+          </View>
+          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'अध्ययन यूनिट्स' : 'Study Units'}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+              {dbInfo?.counts.units ?? '...'} {language === 'hi' ? 'यूनिट' : 'units'}
+            </Text>
+          </View>
+          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'फ्लैशकार्ड्स' : 'Flashcards'}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+              {dbInfo?.counts.flashcards ?? '...'} {language === 'hi' ? 'कार्ड्स' : 'cards'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Sync Feedback Message */}
+        {syncMessage && (
+          <View style={{ padding: 8, backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#A7F3D0' }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#10B981' }}>{syncMessage}</Text>
+          </View>
+        )}
+
+        {/* Buttons Row */}
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8 }}
+            onPress={handleSyncNow}
+            disabled={isSyncing}
+            activeOpacity={0.8}
+          >
+            {isSyncing ? (
+              <ActivityIndicator size="small" color={colors.textOnPrimary} />
+            ) : (
+              <Ionicons name="cloud-download-outline" size={15} color={colors.textOnPrimary} />
+            )}
+            <Text style={{ color: colors.textOnPrimary, fontSize: 12, fontWeight: '700' }}>
+              {isSyncing ? (language === 'hi' ? 'सिंक हो रहा है...' : 'Syncing...') : (language === 'hi' ? 'डेटाबेस से री-सिंक करें' : 'Sync From Cloud DB')}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.canvasSubtle, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+            onPress={checkDb}
+            disabled={isCheckingDb}
+            activeOpacity={0.8}
+          >
+            {isCheckingDb ? (
+              <ActivityIndicator size="small" color={colors.textPrimary} />
+            ) : (
+              <Ionicons name="pulse-outline" size={15} color={colors.textPrimary} />
+            )}
+            <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '600' }}>
+              {language === 'hi' ? 'जांचें' : 'Test Ping'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Mandatory Play Store Government Non-Affiliation Disclaimer */}
       <View
         style={[
@@ -441,15 +649,17 @@ const styles = StyleSheet.create({
     marginTop: 3,
     lineHeight: 17,
   },
-  quickLaunchRow: {
+  quickLaunchGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
-    marginBottom: 6,
+    marginBottom: 12,
+    justifyContent: 'space-between',
   },
   quickLaunchCard: {
-    flex: 1,
+    width: '48%',
     borderRadius: 14,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     alignItems: 'center',
     elevation: 1,

@@ -9,9 +9,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
 import { useTheme } from '../theme';
-import { QUESTIONS } from '../data/questions';
 import { Question } from '../types';
 import { StorageService } from '../storage/storageService';
+import { DataService } from '../services/dataService';
 import { QuestionCard } from '../components/QuestionCard';
 
 export const BookmarksScreen: React.FC = () => {
@@ -26,7 +26,8 @@ export const BookmarksScreen: React.FC = () => {
 
   const loadBookmarks = async () => {
     const ids = await StorageService.getBookmarks();
-    const list = QUESTIONS.filter((q) => ids.includes(q.id));
+    const allQuestions = await DataService.getQuestions();
+    const list = allQuestions.filter((q) => ids.includes(q.id));
     setBookmarkedQuestions(list);
   };
 

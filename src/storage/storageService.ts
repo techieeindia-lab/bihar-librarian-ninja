@@ -1,8 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserTestAttempt } from '../types';
+import { UserQuizAttempt } from '../types';
 
 const BOOKMARKS_KEY = '@bihar_lib_bookmarks';
-const ATTEMPTS_KEY = '@bihar_lib_test_attempts';
+const ONELINER_BOOKMARKS_KEY = '@bihar_lib_oneliner_bookmarks';
+const FLASHCARD_BOOKMARKS_KEY = '@bihar_lib_flashcard_bookmarks';
+const FLASHCARD_MASTERED_KEY = '@bihar_lib_flashcard_mastered';
+const ATTEMPTS_KEY = '@bihar_lib_quiz_attempts';
+const LEGACY_ATTEMPTS_KEY = '@bihar_lib_test_attempts';
 const STREAK_KEY = '@bihar_lib_streak_data';
 
 export interface StreakData {
@@ -11,7 +15,7 @@ export interface StreakData {
 }
 
 export const StorageService = {
-  // Bookmarks
+  // Question Bookmarks
   getBookmarks: async (): Promise<string[]> => {
     try {
       const data = await AsyncStorage.getItem(BOOKMARKS_KEY);
@@ -44,26 +48,129 @@ export const StorageService = {
     }
   },
 
-  // Test Attempts
-  saveTestAttempt: async (attempt: UserTestAttempt): Promise<void> => {
+  // One-Liner Bookmarks
+  getOneLinerBookmarks: async (): Promise<string[]> => {
     try {
-      const history = await StorageService.getTestAttempts();
-      const updated = [attempt, ...history.slice(0, 49)]; // Store up to 50 recent attempts
-      await AsyncStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updated));
-    } catch (e) {}
-  },
-
-  getTestAttempts: async (): Promise<UserTestAttempt[]> => {
-    try {
-      const data = await AsyncStorage.getItem(ATTEMPTS_KEY);
+      const data = await AsyncStorage.getItem(ONELINER_BOOKMARKS_KEY);
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
     }
   },
 
+  isOneLinerBookmarked: async (factId: string): Promise<boolean> => {
+    const list = await StorageService.getOneLinerBookmarks();
+    return list.includes(factId);
+  },
+
+  toggleOneLinerBookmark: async (factId: string): Promise<boolean> => {
+    try {
+      const list = await StorageService.getOneLinerBookmarks();
+      let updated: string[];
+      let added = false;
+      if (list.includes(factId)) {
+        updated = list.filter((id) => id !== factId);
+      } else {
+        updated = [...list, factId];
+        added = true;
+      }
+      await AsyncStorage.setItem(ONELINER_BOOKMARKS_KEY, JSON.stringify(updated));
+      return added;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  // Flashcard Bookmarks
+  getFlashcardBookmarks: async (): Promise<string[]> => {
+    try {
+      const data = await AsyncStorage.getItem(FLASHCARD_BOOKMARKS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  toggleFlashcardBookmark: async (cardId: string): Promise<boolean> => {
+    try {
+      const list = await StorageService.getFlashcardBookmarks();
+      let updated: string[];
+      let added = false;
+      if (list.includes(cardId)) {
+        updated = list.filter((id) => id !== cardId);
+      } else {
+        updated = [...list, cardId];
+        added = true;
+      }
+      await AsyncStorage.setItem(FLASHCARD_BOOKMARKS_KEY, JSON.stringify(updated));
+      return added;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  // Flashcard Mastered (Anki / Quizlet spaced repetition tracking)
+  getFlashcardMastered: async (): Promise<string[]> => {
+    try {
+      const data = await AsyncStorage.getItem(FLASHCARD_MASTERED_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  toggleFlashcardMastered: async (cardId: string): Promise<boolean> => {
+    try {
+      const list = await StorageService.getFlashcardMastered();
+      let updated: string[];
+      let mastered = false;
+      if (list.includes(cardId)) {
+        updated = list.filter((id) => id !== cardId);
+      } else {
+        updated = [...list, cardId];
+        mastered = true;
+      }
+      await AsyncStorage.setItem(FLASHCARD_MASTERED_KEY, JSON.stringify(updated));
+      return mastered;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  // Quiz Attempts
+  saveQuizAttempt: async (attempt: UserQuizAttempt): Promise<void> => {
+    try {
+      const history = await StorageService.getQuizAttempts();
+      const updated = [attempt, ...history.slice(0, 49)];
+      await AsyncStorage.setItem(ATTEMPTS_KEY, JSON.stringify(updated));
+    } catch (e) {}
+  },
+
+  // Legacy alias
+  saveTestAttempt: async (attempt: UserQuizAttempt): Promise<void> => {
+    return StorageService.saveQuizAttempt(attempt);
+  },
+
+  getQuizAttempts: async (): Promise<UserQuizAttempt[]> => {
+    try {
+      const data = await AsyncStorage.getItem(ATTEMPTS_KEY);
+      if (data) return JSON.parse(data);
+      // Fallback check for legacy attempts
+      const legacyData = await AsyncStorage.getItem(LEGACY_ATTEMPTS_KEY);
+      if (legacyData) return JSON.parse(legacyData);
+      return [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  // Legacy alias
+  getTestAttempts: async (): Promise<UserQuizAttempt[]> => {
+    return StorageService.getQuizAttempts();
+  },
+
   getStats: async () => {
-    const attempts = await StorageService.getTestAttempts();
+    const attempts = await StorageService.getQuizAttempts();
     const bookmarks = await StorageService.getBookmarks();
 
     if (attempts.length === 0) {
@@ -73,14 +180,18 @@ export const StorageService = {
         totalQuestionsAttempted: 0,
         totalCorrect: 0,
         bookmarkedCount: bookmarks.length,
+        totalXP: 0,
       };
     }
 
     let totalQs = 0;
     let totalCorrect = 0;
+    let totalXP = 0;
+
     attempts.forEach((a) => {
-      totalQs += a.totalQuestions;
-      totalCorrect += a.correctCount;
+      totalQs += a.totalQuestions || 0;
+      totalCorrect += a.correctCount || 0;
+      totalXP += a.xpEarned || (a.score * 5) || 0;
     });
 
     const avgAccuracy = totalQs > 0 ? Math.round((totalCorrect / totalQs) * 100) : 0;
@@ -91,6 +202,7 @@ export const StorageService = {
       totalQuestionsAttempted: totalQs,
       totalCorrect,
       bookmarkedCount: bookmarks.length,
+      totalXP,
     };
   },
 
@@ -102,7 +214,7 @@ export const StorageService = {
       let streakData: StreakData = data ? JSON.parse(data) : { lastActiveDate: '', currentStreak: 0 };
 
       if (streakData.lastActiveDate === today) {
-        return streakData.currentStreak;
+        return streakData.currentStreak || 1;
       }
 
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -119,15 +231,4 @@ export const StorageService = {
       return 1;
     }
   },
-
-  getStreak: async (): Promise<number> => {
-    try {
-      const data = await AsyncStorage.getItem(STREAK_KEY);
-      if (!data) return 1;
-      const parsed: StreakData = JSON.parse(data);
-      return parsed.currentStreak || 1;
-    } catch (e) {
-      return 1;
-    }
-  }
 };

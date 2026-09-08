@@ -37,6 +37,29 @@ export const SyllabusScreen: React.FC = () => {
         </Text>
       </View>
 
+      {/* Advisory Banner: Reassuring students about standard LIS curriculum */}
+      <View
+        style={[
+          styles.advisoryBanner,
+          {
+            backgroundColor: isDark ? 'rgba(0, 112, 243, 0.1)' : '#EFF6FF',
+            borderColor: isDark ? 'rgba(0, 112, 243, 0.3)' : '#BFDBFE',
+          },
+        ]}
+      >
+        <Ionicons name="shield-checkmark" size={20} color={colors.accent} style={{ marginTop: 2 }} />
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.advisoryTitle, { color: colors.accent }]}>
+            {language === 'hi' ? 'पाठ्यक्रम सुरक्षा एवं मार्गदर्शन' : 'National Standard LIS Framework'}
+          </Text>
+          <Text style={[styles.advisoryBody, { color: colors.textSecondary }]}>
+            {language === 'hi'
+              ? 'बिहार सरकार/BSEB द्वारा विस्तृत आधिकारिक अधिसूचना आने तक यह अध्ययन योजना राष्ट्रीय मानकों (NIOS, KVS, RPSC 2nd Grade) एवं डॉ. रंगनाथन के आधारभूत सिद्धांतों पर आधारित है, जिससे आपका 100% सिलेबस पूर्णतः सुरक्षित और तैयार रहे।'
+              : 'While the state-specific announcement is awaited, this course is curated based on National LIS Standards (NIOS, KVS, RPSC 2nd Grade) ensuring 100% preparation and exam safety.'}
+          </Text>
+        </View>
+      </View>
+
       {/* Conducting Bodies & Portals */}
       <View
         style={[
@@ -289,6 +312,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 3,
     lineHeight: 17,
+  },
+  advisoryBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  advisoryTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 3,
+  },
+  advisoryBody: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   card: {
     borderRadius: 14,

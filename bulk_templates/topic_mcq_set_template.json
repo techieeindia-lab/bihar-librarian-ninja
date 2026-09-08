@@ -1,0 +1,61 @@
+{
+  "quizzes": [
+    {
+      "id": "quiz_u1_t1_s3",
+      "topic_id": "u1_t1",
+      "unit_number": 1,
+      "set_number": 3,
+      "set_name_hi": "सेट 3 (विगत वर्षों के प्रश्न - PYQs)",
+      "set_name_en": "Set 3 (Previous Years Questions - PYQs)",
+      "title_hi": "टॉपिक 1.1 (सेट 3): विगत वर्षों के परीक्षा प्रश्न (BPSC / KVS)",
+      "title_en": "Topic 1.1 (Set 3): Previous Years Exam Questions (BPSC / KVS)",
+      "subtitle_hi": "BPSC, KVS, NVS व DSSSB में पूछे गए 10 महत्वपूर्ण प्रश्न",
+      "subtitle_en": "10 Important repeat questions from BPSC, KVS, NVS & DSSSB",
+      "category": "foundations",
+      "question_count": 10,
+      "question_ids": [
+        "q_u1_t1_s3_1",
+        "q_u1_t1_s3_2",
+        "q_u1_t1_s3_3",
+        "q_u1_t1_s3_4",
+        "q_u1_t1_s3_5",
+        "q_u1_t1_s3_6",
+        "q_u1_t1_s3_7",
+        "q_u1_t1_s3_8",
+        "q_u1_t1_s3_9",
+        "q_u1_t1_s3_10"
+      ],
+      "duration_minutes": 8,
+      "reward_xp": 50,
+      "badge_hi": "यूनिट 1.1 • सेट 3",
+      "badge_en": "Unit 1.1 • Set 3",
+      "difficulty": "medium",
+      "color": "#06B6D4",
+      "icon": "trophy"
+    }
+  ],
+  "questions": [
+    {
+      "id": "q_u1_t1_s3_1",
+      "category": "lis_foundations",
+      "topic_id": "u1_t1",
+      "unit_number": 1,
+      "question_hi": "[हिंदी प्रश्न]",
+      "question_en": "[English Question]",
+      "option_a_hi": "[विकल्प A]",
+      "option_a_en": "[Option A]",
+      "option_b_hi": "[विकल्प B]",
+      "option_b_en": "[Option B]",
+      "option_c_hi": "[विकल्प C]",
+      "option_c_en": "[Option C]",
+      "option_d_hi": "[विकल्प D]",
+      "option_d_en": "[Option D]",
+      "correct_answer": "A",
+      "explanation_hi": "[विस्तृत हिंदी व्याख्या]",
+      "explanation_en": "[Detailed English explanation]",
+      "difficulty": "medium",
+      "year": "2023",
+      "source_exam": "BPSC / KVS Librarian"
+    }
+  ]
+}
