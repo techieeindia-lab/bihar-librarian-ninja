@@ -8,6 +8,7 @@ import {
   Share,
   Linking,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../localization/LanguageContext';
@@ -70,13 +71,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
   const handleShareApp = async () => {
     try {
+      const shareUrl = 'https://play.google.com/store/apps/details?id=com.biharlibrarian.examninja';
+      const msg =
+        language === 'hi'
+          ? `🎯 *बिहार विद्यालय पुस्तकालयाध्यक्ष परीक्षा 2026 की सम्पूर्ण तैयारी!* 📚\n\n"Bihar Librarian Ninja" ऐप में पाएं:\n✅ 5 सम्पूर्ण यूनिट नोट्स (29 टॉपिक्स)\n✅ 725+ हाई-यील्ड वन-लाइनर तथ्य\n✅ 450+ क्विक रिवीजन फ्लैशकार्ड्स\n✅ LIS शब्दावली व वर्ष डिक्शनरी (SOUL, 1933, DDC)\n✅ डेली चैलेंज व 10-प्रश्न CBT मॉक टेस्ट\n⚡ 100% नि:शुल्क एवं ऑफ़लाइन (बिना इंटरनेट)\n\n📲 अभी डाउनलोड करें:\n${shareUrl}`
+          : `🎯 *Bihar School Librarian Exam 2026 Preparation App!* 📚\n\nDownload "Bihar Librarian Ninja":\n✅ 5 Complete Units (29 Topics) in Hindi & English\n✅ 725+ High-Yield One-Liner Facts\n✅ 450+ Quick Revision Flashcards\n✅ LIS Acronyms & Milestone Years Glossary\n✅ Daily Quizzes & Mistake Notebook\n⚡ 100% Free & Offline\n\n📲 Download on Google Play:\n${shareUrl}`;
+
       await Share.share({
-        message:
-          language === 'hi'
-            ? 'बिहार विद्यालय पुस्तकालयाध्यक्ष परीक्षा 2026 की बेहतरीन तैयारी के लिए "Bihar Librarian Ninja" ऐप डाउनलोड करें! इसमें 5 सम्पूर्ण नोट्स यूनिट (29 टॉपिक्स), 725+ वन-लाइनर, 450+ फ्लैशकार्ड्स, DDC/CC वर्गीकरण और फुल CBT मॉक टेस्ट उपलब्ध हैं।'
-            : 'Download Bihar Librarian Ninja app for Bihar School Librarian & BPSC recruitment exam prep! Includes 5 bilingual study units (29 topics), 725+ one-liners, 450+ flashcards, DDC/CC rules, and full CBT mock tests.',
+        message: msg,
+        title: language === 'hi' ? 'बिहार लाइब्रेरियन निंजा' : 'Bihar Librarian Ninja',
       });
     } catch (e) {}
+  };
+
+  const handleRateApp = () => {
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.biharlibrarian.examninja';
+    const marketUrl = 'market://details?id=com.biharlibrarian.examninja';
+
+    Linking.canOpenURL(marketUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(marketUrl);
+        } else {
+          Linking.openURL(playStoreUrl);
+        }
+      })
+      .catch(() => {
+        Linking.openURL(playStoreUrl);
+      });
+  };
+
+  const handleContactFeedback = () => {
+    const subject = encodeURIComponent('Bihar Librarian Ninja App - Feedback / Query');
+    const body = encodeURIComponent(
+      `नमस्ते / Hello Team,\n\nऐप सुझाव / प्रश्न में सुधार / समस्या:\n\n\n---\nApp Version: 1.0.0\nLanguage: ${language}\nPackage: com.biharlibrarian.examninja`
+    );
+    Linking.openURL(`mailto:ninjaexamstudio@outlook.com?subject=${subject}&body=${body}`).catch(() => {
+      Alert.alert(
+        language === 'hi' ? 'संपर्क ईमेल' : 'Contact Support',
+        language === 'hi'
+          ? 'कृपया हमें सीधे इस ईमेल पर लिखें:\nninjaexamstudio@outlook.com'
+          : 'Please write to us directly at:\nninjaexamstudio@outlook.com'
+      );
+    });
   };
 
   const handleOpenBseb = () => {
@@ -236,6 +273,36 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </Text>
             <Text style={[styles.quickLaunchSubtitle, { color: colors.textSecondary }]}>
               {language === 'hi' ? 'BSEB LET व BPSC' : 'Exam Scheme'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* LIS Quick Glossary (Acronyms & Milestone Years) */}
+          <TouchableOpacity
+            style={[
+              styles.quickLaunchCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => onNavigateTab('glossary')}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.quickLaunchIcon,
+                {
+                  backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#F5F3FF',
+                },
+              ]}
+            >
+              <Ionicons name="text" size={20} color="#7C3AED" />
+            </View>
+            <Text style={[styles.quickLaunchTitle, { color: colors.textPrimary }]}>
+              {language === 'hi' ? 'शब्दावली व वर्ष' : 'LIS Glossary'}
+            </Text>
+            <Text style={[styles.quickLaunchSubtitle, { color: colors.textSecondary }]}>
+              {language === 'hi' ? 'SOUL, DDC, 1933...' : 'Acronyms & Dates'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -596,12 +663,41 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       >
         <TouchableOpacity
           style={styles.actionRow}
+          onPress={handleRateApp}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="star" size={18} color="#F59E0B" />
+          <Text style={[styles.actionRowText, { color: colors.textPrimary }]}>
+            {t.rateApp}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        <TouchableOpacity
+          style={styles.actionRow}
           onPress={handleShareApp}
           activeOpacity={0.7}
         >
           <Ionicons name="share-social-outline" size={18} color={colors.textPrimary} />
           <Text style={[styles.actionRowText, { color: colors.textPrimary }]}>
             {t.shareApp}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        {/* Contact & Feedback Email */}
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={handleContactFeedback}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="mail-outline" size={18} color="#0070F3" />
+          <Text style={[styles.actionRowText, { color: colors.textPrimary }]}>
+            {language === 'hi' ? 'सुझाव या त्रुटि रिपोर्ट करें' : 'Feedback & Contact Support'}
           </Text>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
         </TouchableOpacity>

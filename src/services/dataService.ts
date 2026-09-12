@@ -405,7 +405,7 @@ export const DataService = {
         const cached = await AsyncStorage.getItem(CACHE_KEY_QUIZZES);
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed) && parsed.length >= QUIZZES.length) {
             DataService._refreshQuizzes().catch(() => {});
             return parsed;
           }
@@ -430,10 +430,16 @@ export const DataService = {
           let setNumber = row.set_number;
 
           if (!topicId && row.id) {
-            const tm = row.id.match(/quiz_u(\d)_t(\d)/);
+            const tm = row.id.match(/quiz_u(\d+)_t(\d+)/);
             if (tm) {
               unitNumber = parseInt(tm[1], 10);
               topicId = `u${tm[1]}_t${tm[2]}`;
+            }
+          }
+          if (!unitNumber && row.id) {
+            const um = row.id.match(/quiz_unit_(\d+)/);
+            if (um) {
+              unitNumber = parseInt(um[1], 10);
             }
           }
           if (setNumber === undefined && row.id) {
@@ -465,8 +471,12 @@ export const DataService = {
           };
         });
 
-        await AsyncStorage.setItem(CACHE_KEY_QUIZZES, JSON.stringify(mapped));
-        return mapped;
+        // Merge with local QUIZZES so all local additions (e.g. PYQs) are always preserved
+        const remoteIds = new Set(mapped.map((q) => q.id));
+        const merged = [...mapped, ...QUIZZES.filter((q) => !remoteIds.has(q.id))];
+
+        await AsyncStorage.setItem(CACHE_KEY_QUIZZES, JSON.stringify(merged));
+        return merged;
       }
     } catch (e) {
       // Offline fallback
@@ -474,7 +484,12 @@ export const DataService = {
 
     try {
       const cached = await AsyncStorage.getItem(CACHE_KEY_QUIZZES);
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length >= QUIZZES.length) {
+          return parsed;
+        }
+      }
     } catch (e) {}
 
     return QUIZZES;

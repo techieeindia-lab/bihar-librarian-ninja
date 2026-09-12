@@ -117,6 +117,7 @@ export type ActiveTab =
   | 'oneliners'
   | 'notes'
   | 'flashcards'
+  | 'glossary'
   | 'more'
   | 'syllabus'
   | 'bookmarks'

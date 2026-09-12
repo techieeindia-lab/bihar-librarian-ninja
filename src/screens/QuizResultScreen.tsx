@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Share,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -56,6 +57,23 @@ export const QuizResultScreen: React.FC<QuizResultScreenProps> = ({
         title: t.shareScoreTitle,
       });
     } catch (e) {}
+  };
+
+  const handleRateApp = () => {
+    const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.biharlibrarian.examninja';
+    const marketUrl = 'market://details?id=com.biharlibrarian.examninja';
+
+    Linking.canOpenURL(marketUrl)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(marketUrl);
+        } else {
+          Linking.openURL(playStoreUrl);
+        }
+      })
+      .catch(() => {
+        Linking.openURL(playStoreUrl);
+      });
   };
 
   const filteredQuestions = questions.filter((q) => {
@@ -134,15 +152,30 @@ export const QuizResultScreen: React.FC<QuizResultScreenProps> = ({
             </View>
           </View>
 
-          {/* VIRAL SHARE BUTTON */}
-          <TouchableOpacity
-            style={styles.shareBtn}
-            onPress={handleShareOnWhatsApp}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="logo-whatsapp" size={18} color="#166534" />
-            <Text style={styles.shareBtnText}>{t.shareScoreBtn}</Text>
-          </TouchableOpacity>
+          {/* VIRAL SHARE & RATING BUTTONS */}
+          <View style={styles.shareRow}>
+            <TouchableOpacity
+              style={styles.shareBtn}
+              onPress={handleShareOnWhatsApp}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="logo-whatsapp" size={17} color="#166534" />
+              <Text style={styles.shareBtnText}>{t.shareScoreBtn}</Text>
+            </TouchableOpacity>
+
+            {isHighScorer && (
+              <TouchableOpacity
+                style={styles.rateBtn}
+                onPress={handleRateApp}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="star" size={15} color="#B45309" />
+                <Text style={styles.rateBtnText}>
+                  {language === 'hi' ? '5★ रेटिंग दें' : 'Rate 5★'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </LinearGradient>
       </View>
 
@@ -335,21 +368,43 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 18,
+  },
   shareBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 9,
     borderRadius: 22,
-    marginTop: 18,
-    gap: 8,
+    gap: 6,
     elevation: 2,
   },
   shareBtnText: {
     color: '#166534',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
+  },
+  rateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 22,
+    gap: 5,
+    elevation: 2,
+  },
+  rateBtnText: {
+    color: '#92400E',
+    fontSize: 12,
+    fontWeight: '800',
   },
   actionRow: {
     flexDirection: 'row',

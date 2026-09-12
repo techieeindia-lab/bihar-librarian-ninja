@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -109,14 +110,16 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onStartQuiz }) => {
     const groups: TopicQuizGroup[] = [];
     const map = new Map<string, TopicQuizGroup>();
 
-    const topicQuizzes = quizzes.filter((q) => q.id.startsWith('quiz_u'));
+    const topicQuizzes = quizzes.filter(
+      (q) => !q.id.startsWith('quiz_unit_') && (q.topicId != null || /^quiz_u\d+_t\d+/.test(q.id))
+    );
 
     topicQuizzes.forEach((quiz) => {
       let topicId = quiz.topicId;
       let unitNumber = quiz.unitNumber;
 
       if (!topicId && quiz.id) {
-        const tm = quiz.id.match(/quiz_u(\d)_t(\d)/);
+        const tm = quiz.id.match(/quiz_u(\d+)_t(\d+)/);
         if (tm) {
           unitNumber = parseInt(tm[1], 10);
           topicId = `u${tm[1]}_t${tm[2]}`;
@@ -176,6 +179,62 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onStartQuiz }) => {
       return g.unitNumber === selectedTopicUnit;
     });
   }, [topicGroups, selectedTopicUnit]);
+
+  // Group unit quizzes into 5 UnitQuizGroups (Unit 1 to 5) with Set 1 & Set 2
+  const unitGroups = React.useMemo(() => {
+    const groups: TopicQuizGroup[] = [];
+    const map = new Map<number, TopicQuizGroup>();
+
+    const unitQuizzes = quizzes.filter((q) => q.id.startsWith('quiz_unit_'));
+
+    unitQuizzes.forEach((quiz) => {
+      let unitNumber = quiz.unitNumber;
+      if (!unitNumber) {
+        const um = quiz.id.match(/quiz_unit_(\d+)/);
+        if (um) unitNumber = parseInt(um[1], 10);
+      }
+      if (!unitNumber) unitNumber = 1;
+
+      if (!map.has(unitNumber)) {
+        const cleanTitleHi = quiz.title.hi.replace(/\s*\([^\)]*सेट[^\)]*\)/gi, '').trim();
+        const cleanTitleEn = quiz.title.en.replace(/\s*\([^\)]*Set[^\)]*\)/gi, '').trim();
+
+        const group: TopicQuizGroup = {
+          topicId: `unit_${unitNumber}`,
+          unitNumber,
+          topicOrder: unitNumber,
+          title: { hi: cleanTitleHi, en: cleanTitleEn },
+          subtitle: quiz.subtitle,
+          badge: {
+            hi: `यूनिट ${unitNumber} मास्टर 🏆`,
+            en: `Unit ${unitNumber} Master 🏆`,
+          },
+          color: quiz.color || '#0070F3',
+          icon: quiz.icon || 'library',
+          sets: [],
+        };
+        map.set(unitNumber, group);
+        groups.push(group);
+      }
+
+      const group = map.get(unitNumber)!;
+      group.sets.push(quiz);
+    });
+
+    // Sort sets in order: Set 1, Set 2...
+    groups.forEach((group) => {
+      group.sets.sort((a, b) => {
+        const sA = a.setNumber !== undefined ? a.setNumber : (a.id.includes('_s2') ? 2 : 1);
+        const sB = b.setNumber !== undefined ? b.setNumber : (b.id.includes('_s2') ? 2 : 1);
+        return sA - sB;
+      });
+    });
+
+    // Sort groups by unitNumber (1 to 5)
+    groups.sort((a, b) => a.unitNumber - b.unitNumber);
+
+    return groups;
+  }, [quizzes]);
 
   const filteredQuizzes = quizzes.filter((quiz) => {
     if (filterType === 'all') return true;
@@ -366,6 +425,8 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onStartQuiz }) => {
             {language === 'hi' ? '🔥 डेली चैलेंज' : '🔥 Daily Streak'}
           </Text>
         </TouchableOpacity>
+
+        
 
         <TouchableOpacity
           style={[
@@ -609,6 +670,143 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onStartQuiz }) => {
                           </Text>
                         </View>
                       )}
+                    </View>
+                  </View>
+                </View>
+              );
+            })
+          )
+        ) : filterType === 'units' ? (
+          unitGroups.length === 0 ? (
+            <View style={{ padding: 32, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="folder-open-outline" size={36} color={colors.textMuted} />
+              <Text style={{ marginTop: 8, fontSize: 13, color: colors.textSecondary }}>
+                {language === 'hi' ? 'कोई यूनिट टेस्ट उपलब्ध नहीं है' : 'No unit tests available'}
+              </Text>
+            </View>
+          ) : (
+            unitGroups.map((group) => {
+              const totalGroupQs = group.sets.reduce((sum, s) => sum + (s.questionCount || s.questionIds.length || 25), 0);
+              const accentColor = group.color || colors.primary;
+
+              return (
+                <View
+                  key={group.topicId}
+                  style={[
+                    styles.quizCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                      borderLeftColor: accentColor,
+                      borderLeftWidth: 4,
+                    },
+                  ]}
+                >
+                  <View style={styles.cardHeader}>
+                    <View style={[styles.iconWrapper, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F4F4F5' }]}>
+                      <Ionicons
+                        name={resolveQuizIcon(group.icon)}
+                        size={22}
+                        color={accentColor}
+                      />
+                    </View>
+
+                    <View style={styles.cardTitleContainer}>
+                      <View style={styles.badgeRow}>
+                        {group.badge && (
+                          <View style={[styles.badge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F4F4F5' }]}>
+                            <Text style={[styles.badgeText, { color: accentColor }]}>
+                              {group.badge[language]}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={[styles.setsCountChip, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' }]}>
+                          <Ionicons name="layers-outline" size={11} color="#10B981" style={{ marginRight: 3 }} />
+                          <Text style={styles.setsCountText}>
+                            {group.sets.length} {language === 'hi' ? 'सेट्स' : 'Sets'} • {totalGroupQs} Qs
+                          </Text>
+                        </View>
+                      </View>
+
+                      <Text style={[styles.quizTitle, { color: colors.textPrimary }]}>
+                        {group.title[language]}
+                      </Text>
+                      <Text style={[styles.quizSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {group.subtitle[language]}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Interactive Set Selection Row */}
+                  <View style={[styles.setSelectionContainer, { borderTopColor: colors.border }]}>
+                    <View style={styles.setSelectionHeader}>
+                      <Text style={[styles.setSelectionTitle, { color: colors.textSecondary }]}>
+                        {language === 'hi' ? '🎯 मेगा टेस्ट सेट चुनें:' : '🎯 Choose Mega Test Set:'}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: colors.textMuted, fontWeight: '600' }}>
+                        {group.sets.length > 1
+                          ? (language === 'hi' ? `${group.sets.length} सेट उपलब्ध` : `${group.sets.length} Sets Available`)
+                          : (language === 'hi' ? '25 प्रश्न प्रति सेट' : '25 Qs per set')}
+                      </Text>
+                    </View>
+
+                    <View style={styles.setChipsRow}>
+                      {group.sets.map((setQuiz) => {
+                        const attempt = attemptsMap[setQuiz.id];
+                        const isAttempted = !!attempt;
+                        const setNum = setQuiz.setNumber !== undefined ? setQuiz.setNumber : (setQuiz.id.match(/_s(\d+)$/) ? parseInt(RegExp.$1, 10) : 1);
+                        const setLabel = setQuiz.setName ? setQuiz.setName[language] : (language === 'hi' ? `सेट ${setNum}` : `Set ${setNum}`);
+
+                        return (
+                          <TouchableOpacity
+                            key={setQuiz.id}
+                            style={[
+                              styles.setPill,
+                              {
+                                backgroundColor: isAttempted
+                                  ? (isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5')
+                                  : (isDark ? 'rgba(255,255,255,0.04)' : '#F9FAFB'),
+                                borderColor: isAttempted ? '#10B981' : colors.border,
+                              },
+                            ]}
+                            onPress={() => onStartQuiz(setQuiz.id)}
+                            activeOpacity={0.75}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              <Ionicons
+                                name={isAttempted ? 'checkmark-circle' : 'play-circle'}
+                                size={15}
+                                color={isAttempted ? '#10B981' : accentColor}
+                                style={{ marginRight: 6 }}
+                              />
+                              <Text
+                                style={[
+                                  styles.setPillText,
+                                  {
+                                    color: isAttempted
+                                      ? (isDark ? '#34D399' : '#059669')
+                                      : colors.textPrimary,
+                                  },
+                                ]}
+                              >
+                                {setLabel}
+                              </Text>
+                            </View>
+
+                            <View style={styles.setPillMeta}>
+                              {isAttempted ? (
+                                <Text style={styles.setPillScoreText}>
+                                  {attempt.correctCount}/{attempt.totalQuestions} ⭐
+                                </Text>
+                              ) : (
+                                <Text style={[styles.setPillCountText, { color: colors.textMuted }]}>
+                                  {setQuiz.questionCount || 25} Qs • +{setQuiz.rewardXP} XP
+                                </Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
                   </View>
                 </View>

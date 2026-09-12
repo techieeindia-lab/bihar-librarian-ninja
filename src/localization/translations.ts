@@ -13,6 +13,7 @@ export const translations = {
     tabOneLiners: 'वन-लाइनर',
     tabNotes: 'नोट्स',
     tabCards: 'फ्लैशकार्ड',
+    tabGlossary: 'शब्दावली व वर्ष',
     tabMore: 'अधिक',
     tabSyllabus: 'पाठ्यक्रम',
     tabBookmarks: 'सहेजे गए',
@@ -131,7 +132,7 @@ export const translations = {
     filterCorrect: 'सही',
     shareScoreBtn: 'व्हाट्सएप पर स्कोर शेयर करें',
     shareScoreTitle: 'दोस्तों को चुनौती दें 🚀',
-    shareMsgTemplate: '🏆 मैंने बिहार लाइब्रेरियन क्विज़ में {score}/{total} अंक हासिल किए! 🎯\nक्या आप मुझे हरा सकते हैं? बिहार पुस्तकालयाध्यक्ष परीक्षा 2026 की बेहतरीन तैयारी के लिए आज ही "Bihar Librarian Ninja" ऐप से अभ्यास करें! 📚✨',
+    shareMsgTemplate: '🏆 मैंने बिहार लाइब्रेरियन क्विज़ में {score}/{total} अंक हासिल किए! 🎯\nक्या आप मुझे हरा सकते हैं? बिहार पुस्तकालयाध्यक्ष परीक्षा 2026 की बेहतरीन तैयारी के लिए आज ही "Bihar Librarian Ninja" ऐप से अभ्यास करें! 📚✨\n\n📲 डाउनलोड लिंक:\nhttps://play.google.com/store/apps/details?id=com.biharlibrarian.examninja',
     reattemptQuiz: 'पुनः क्विज़ खेलें',
     backToQuizzes: 'अन्य क्विज़ देखें',
     detailedReview: 'विस्तृत प्रश्न समीक्षा एवं व्याख्या',
@@ -174,10 +175,19 @@ export const translations = {
     examStructureTitle: 'परीक्षा संरचना एवं अंक विभाजन',
     officialWebsiteBtn: 'आधिकारिक पोर्टल (BSEB / BPSC)',
 
-    // Bookmarks
+    // Bookmarks & Mistakes
     bookmarksTitle: 'सहेजे गए महत्वपूर्ण प्रश्न',
     noBookmarksMsg: 'अभी कोई प्रश्न सहेजा नहीं गया है। क्विज़ के दौरान कठिन प्रश्नों को सहेजें।',
     removeBookmark: 'हटाएं',
+    tabSaved: 'सहेजे गए प्रश्न',
+    tabMistakes: 'गलत प्रश्न (Mistakes)',
+    noMistakesMsg: 'शानदार! आपके पास कोई गलत प्रश्न लंबित नहीं है।',
+    clearMistakes: 'सूची साफ करें',
+    markSolved: 'हल किया (हटाएं)',
+    askOnWhatsApp: 'WhatsApp पर पूछें',
+    offlineReady: '100% ऑफ़लाइन',
+    filterYears: '📅 महत्वपूर्ण वर्ष',
+    filterAcronyms: '🔤 फुल फॉर्म',
 
     // Settings & Play Store Compliance
     settingsTitle: 'सेटिंग्स एवं ऐप विवरण',
@@ -204,6 +214,7 @@ export const translations = {
     tabOneLiners: 'One-Liners',
     tabNotes: 'Notes',
     tabCards: 'Flashcards',
+    tabGlossary: 'LIS Glossary',
     tabMore: 'More',
     tabSyllabus: 'Syllabus',
     tabBookmarks: 'Bookmarks',
@@ -322,7 +333,7 @@ export const translations = {
     filterCorrect: 'Correct',
     shareScoreBtn: 'Share Score on WhatsApp',
     shareScoreTitle: 'Challenge Your Friends 🚀',
-    shareMsgTemplate: '🏆 I scored {score}/{total} on Bihar Librarian Quiz! 🎯\nCan you beat my score? Download the "Bihar Librarian Ninja" app for free Bihar School Librarian Exam prep! 📚✨',
+    shareMsgTemplate: '🏆 I scored {score}/{total} on Bihar Librarian Quiz! 🎯\nCan you beat my score? Download the "Bihar Librarian Ninja" app for free Bihar School Librarian Exam prep! 📚✨\n\n📲 Download on Google Play:\nhttps://play.google.com/store/apps/details?id=com.biharlibrarian.examninja',
     reattemptQuiz: 'Replay Quiz',
     backToQuizzes: 'Explore More Quizzes',
     detailedReview: 'Detailed Question Review & Explanations',
@@ -365,10 +376,19 @@ export const translations = {
     examStructureTitle: 'Exam Structure & Marking Scheme',
     officialWebsiteBtn: 'Official Portals (BSEB / BPSC)',
 
-    // Bookmarks
+    // Bookmarks & Mistakes
     bookmarksTitle: 'Your Bookmarked Questions',
     noBookmarksMsg: 'No bookmarked questions yet. Save tricky questions during quizzes for quick revision.',
     removeBookmark: 'Remove',
+    tabSaved: 'Saved Questions',
+    tabMistakes: 'My Mistakes',
+    noMistakesMsg: 'Awesome! You have no pending mistakes. Great job!',
+    clearMistakes: 'Clear All',
+    markSolved: 'Mark Solved',
+    askOnWhatsApp: 'Ask on WhatsApp',
+    offlineReady: '100% Offline',
+    filterYears: '📅 Key Years',
+    filterAcronyms: '🔤 Full Forms',
 
     // Settings & Play Store Compliance
     settingsTitle: 'Settings & App Information',

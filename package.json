@@ -7,8 +7,10 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.115.0",
-    "expo": "~57.0.20",
-    "expo-linear-gradient": "~57.0.1",
+    "expo": "~57.0.22",
+    "expo-font": "~57.0.4",
+    "expo-linear-gradient": "~57.0.2",
+    "expo-splash-screen": "~57.0.9",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -28,7 +30,8 @@
     "import:content": "node scripts/import_content.mjs",
     "seed:db": "npx tsx scripts/seed_remote_db.mjs",
     "sync:local": "node scripts/export_all_to_local.mjs",
-    "verify:content": "node scripts/check_counts.mjs && node scripts/check_integrity.mjs"
+    "verify:content": "node scripts/check_counts.mjs && node scripts/check_integrity.mjs",
+    "generate:assets": "node scripts/generate_store_assets.mjs"
   },
   "private": true
 }

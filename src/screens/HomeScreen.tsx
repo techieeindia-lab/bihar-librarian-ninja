@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Share,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -15,6 +16,7 @@ import { useTheme, categoryColorMap, difficultyColorMap } from '../theme';
 import { QuestionCard } from '../components/QuestionCard';
 import { DataService } from '../services/dataService';
 import { StorageService } from '../storage/storageService';
+import { DailyContentService } from '../services/dailyContentService';
 import { ActiveTab, Question, OneLiner } from '../types';
 
 interface HomeScreenProps {
@@ -63,13 +65,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     ]);
 
     if (questions && questions.length > 0) {
-      setDailyQuestion(questions[0]);
-      const bookmarked = await StorageService.isBookmarked(questions[0].id);
-      setIsBookmarked(bookmarked);
+      const q = DailyContentService.getDailyQuestion(questions);
+      setDailyQuestion(q);
+      if (q) {
+        const bookmarked = await StorageService.isBookmarked(q.id);
+        setIsBookmarked(bookmarked);
+      }
     }
 
     if (oneLiners && oneLiners.length > 0) {
-      setSpotlightOneLiner(oneLiners[0]);
+      const ol = DailyContentService.getDailyOneLiner(oneLiners);
+      setSpotlightOneLiner(ol);
       setOneLinersCount(oneLiners.length);
     }
 
@@ -84,6 +90,47 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setIsBookmarked(added);
     const userStats = await StorageService.getStats();
     setStats(userStats);
+  };
+
+  const handleShareDailyQuestion = () => {
+    if (!dailyQuestion) return;
+    const qText = dailyQuestion.question?.[language] || dailyQuestion.question?.['hi'] || '';
+    const optA = dailyQuestion.options?.A?.[language] || dailyQuestion.options?.A?.['hi'] || '';
+    const optB = dailyQuestion.options?.B?.[language] || dailyQuestion.options?.B?.['hi'] || '';
+    const optC = dailyQuestion.options?.C?.[language] || dailyQuestion.options?.C?.['hi'] || '';
+    const optD = dailyQuestion.options?.D?.[language] || dailyQuestion.options?.D?.['hi'] || '';
+
+    const shareUrl = 'https://play.google.com/store/apps/details?id=com.biharlibrarian.examninja';
+    const message = language === 'hi'
+      ? `❓ *बिहार लाइब्रेरियन परीक्षा 2026 - आज का प्रश्न:*
+
+"${qText}"
+
+(A) ${optA}
+(B) ${optB}
+(C) ${optC}
+(D) ${optD}
+
+🎯 *क्या आपको सही उत्तर पता है?*
+विस्तृत व्याख्या एवं 1,000+ प्रश्नों के अभ्यास के लिए *Bihar Librarian Ninja* ऐप डाउनलोड करें:
+📲 ${shareUrl}`
+      : `❓ *Bihar Librarian Exam 2026 - Today's Question:*
+
+"${qText}"
+
+(A) ${optA}
+(B) ${optB}
+(C) ${optC}
+(D) ${optD}
+
+🎯 *Do you know the answer?*
+Download *Bihar Librarian Ninja* for explanations and practice:
+📲 ${shareUrl}`;
+
+    Share.share({
+      message,
+      title: language === 'hi' ? 'आज का प्रश्न' : "Today's Question",
+    }).catch(() => {});
   };
 
   const lawsData = [
@@ -165,9 +212,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </Text>
               </View>
 
-              <View style={styles.liveStatusTag}>
-                <View style={styles.pulseDot} />
-                <Text style={styles.liveStatusText}>CBT FORMAT</Text>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                <View style={[styles.liveStatusTag, { backgroundColor: 'rgba(59, 130, 246, 0.25)', borderColor: '#3B82F6' }]}>
+                  <Ionicons name="flash-outline" size={10} color="#93C5FD" />
+                  <Text style={styles.liveStatusText}>100% OFFLINE</Text>
+                </View>
+
+                <View style={styles.liveStatusTag}>
+                  <View style={styles.pulseDot} />
+                  <Text style={styles.liveStatusText}>CBT FORMAT</Text>
+                </View>
               </View>
             </View>
 
@@ -374,50 +428,69 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           />
 
           <View style={styles.dailyActionRow}>
-            {!isAnswerChecked ? (
-              <TouchableOpacity
-                style={[
-                  styles.checkAnswerPill,
-                  {
-                    backgroundColor: selectedOption ? colors.primary : (isDark ? '#262626' : '#E4E4E7'),
-                  },
-                ]}
-                disabled={!selectedOption}
-                onPress={() => setIsAnswerChecked(true)}
-                activeOpacity={0.8}
-              >
-                <Text
+            <View style={styles.dailyButtonsGrid}>
+              {!isAnswerChecked ? (
+                <TouchableOpacity
                   style={[
-                    styles.checkAnswerPillText,
+                    styles.checkAnswerPill,
                     {
-                      color: selectedOption ? colors.textOnPrimary : colors.textMuted,
+                      backgroundColor: selectedOption ? colors.primary : (isDark ? '#262626' : '#E4E4E7'),
                     },
                   ]}
+                  disabled={!selectedOption}
+                  onPress={() => setIsAnswerChecked(true)}
+                  activeOpacity={0.8}
                 >
-                  {t.checkAnswer}
-                </Text>
-              </TouchableOpacity>
-            ) : (
+                  <Text
+                    style={[
+                      styles.checkAnswerPillText,
+                      {
+                        color: selectedOption ? colors.textOnPrimary : colors.textMuted,
+                      },
+                    ]}
+                  >
+                    {t.checkAnswer}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.resetDailyPill,
+                    {
+                      backgroundColor: colors.canvasSubtle,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setSelectedOption(null);
+                    setIsAnswerChecked(false);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="refresh" size={15} color={colors.textPrimary} />
+                  <Text style={[styles.resetDailyText, { color: colors.textPrimary }]}>
+                    {language === 'hi' ? 'पुनः प्रयास' : 'Reset'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 style={[
-                  styles.resetDailyPill,
+                  styles.shareWhatsAppPill,
                   {
-                    backgroundColor: colors.canvasSubtle,
-                    borderColor: colors.border,
+                    backgroundColor: isDark ? 'rgba(22, 101, 52, 0.25)' : '#ECFDF5',
+                    borderColor: isDark ? 'rgba(34, 197, 94, 0.4)' : '#A7F3D0',
                   },
                 ]}
-                onPress={() => {
-                  setSelectedOption(null);
-                  setIsAnswerChecked(false);
-                }}
+                onPress={handleShareDailyQuestion}
                 activeOpacity={0.8}
               >
-                <Ionicons name="refresh" size={15} color={colors.textPrimary} />
-                <Text style={[styles.resetDailyText, { color: colors.textPrimary }]}>
-                  {language === 'hi' ? 'पुनः प्रयास करें (Reset)' : 'Reset Challenge'}
+                <Ionicons name="logo-whatsapp" size={16} color="#166534" />
+                <Text style={styles.shareWhatsAppText}>
+                  {t.askOnWhatsApp || 'WhatsApp पर पूछें'}
                 </Text>
               </TouchableOpacity>
-            )}
+            </View>
           </View>
         </View>
       )}
@@ -818,6 +891,88 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
             </TouchableOpacity>
           </View>
+
+          {/* Tile 6: LIS Quick Glossary (Acronyms & Milestone Years) */}
+          <TouchableOpacity
+            style={[
+              styles.bentoHeroCard,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: colors.border,
+                borderTopColor: '#7C3AED',
+                borderTopWidth: 3,
+              },
+            ]}
+            onPress={() => onNavigateTab('glossary')}
+            activeOpacity={0.85}
+          >
+            <View style={styles.bentoHeroTopBar}>
+              <View
+                style={[
+                  styles.bentoTagBadge,
+                  {
+                    backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#F5F3FF',
+                    borderColor: isDark ? 'rgba(124, 58, 237, 0.35)' : '#DDD6FE',
+                  },
+                ]}
+              >
+                <Ionicons name="sparkles" size={11} color="#7C3AED" />
+                <Text style={[styles.bentoTagText, { color: '#7C3AED' }]}>
+                  {language === 'hi' ? 'A-Z शब्दावली व कालक्रम' : 'A-Z GLOSSARY & TIMELINE'}
+                </Text>
+              </View>
+
+              <View style={[styles.microChip, { backgroundColor: colors.canvasSubtle, borderColor: colors.border }]}>
+                <Ionicons name="search" size={12} color={colors.textSecondary} />
+                <Text style={[styles.microChipText, { color: colors.textSecondary }]}>
+                  SOUL, DDC, 1933...
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.bentoHeroBody}>
+              <View
+                style={[
+                  styles.bentoHeroIconWrapper,
+                  {
+                    backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#F5F3FF',
+                    borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : '#DDD6FE',
+                  },
+                ]}
+              >
+                <Ionicons name="text" size={24} color="#7C3AED" />
+              </View>
+
+              <View style={styles.bentoHeroText}>
+                <Text style={[styles.bentoHeroTitle, { color: colors.textPrimary }]}>
+                  {language === 'hi'
+                    ? 'LIS शब्दावली व महत्वपूर्ण वर्ष'
+                    : 'LIS Quick Glossary & Key Years'}
+                </Text>
+                <Text style={[styles.bentoHeroDesc, { color: colors.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'परीक्षा हॉल में जाने से पहले 2 सेकंड में खोजें सभी फुल फॉर्म व ऐतिहासिक तिथियां'
+                    : 'Instant 2-second search for all library science acronyms, acts & landmark dates'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.bentoHeroFooter, { borderTopColor: colors.border }]}>
+              <View style={[styles.bentoHeroStatus, { backgroundColor: isDark ? 'rgba(124, 58, 237, 0.12)' : '#F5F3FF' }]}>
+                <Ionicons name="flash" size={13} color="#7C3AED" />
+                <Text style={[styles.bentoHeroStatusText, { color: '#7C3AED' }]}>
+                  {language === 'hi' ? 'त्वरित A-Z सर्च' : 'Instant Search Ready'}
+                </Text>
+              </View>
+
+              <View style={[styles.bentoHeroBtn, { backgroundColor: '#7C3AED' }]}>
+                <Text style={styles.bentoHeroBtnText}>
+                  {language === 'hi' ? 'खोजें' : 'Explore'}
+                </Text>
+                <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -923,6 +1078,214 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </TouchableOpacity>
               );
             })}
+          </View>
+        </View>
+      </View>
+
+      {/* Version 2.0 Roadmap: Coming Soon Teaser */}
+      <View style={styles.sectionWrapper}>
+        <View
+          style={[
+            styles.comingSoonCard,
+            {
+              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.08)' : '#EFF6FF',
+              borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE',
+            },
+          ]}
+        >
+          {/* Header Row */}
+          <View style={styles.comingSoonHeader}>
+            <View style={styles.comingSoonBadge}>
+              <Ionicons name="rocket" size={13} color="#0070F3" />
+              <Text style={styles.comingSoonBadgeText}>
+                {language === 'hi' ? 'आगामी अपडेट • VERSION 2.0' : 'COMING SOON • VERSION 2.0'}
+              </Text>
+            </View>
+            <View style={styles.comingSoonTag}>
+              <Text style={styles.comingSoonTagText}>
+                {language === 'hi' ? 'शीघ्र उपलब्ध' : 'In Progress'}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.comingSoonTitle, { color: colors.textPrimary }]}>
+            {language === 'hi'
+              ? 'आगामी नए फीचर्स (Next Version Teaser)'
+              : 'Upcoming Major Features (Version 2.0)'}
+          </Text>
+
+          <Text style={[styles.comingSoonSubtitle, { color: colors.textSecondary }]}>
+            {language === 'hi'
+              ? 'बिहार विद्यालय परीक्षा समिति (BSEB) आधिकारिक अधिसूचना के साथ आने वाले फीचर्स:'
+              : 'Releasing with the official BSEB Librarian recruitment notification:'}
+          </Text>
+
+          {/* Feature List */}
+          <View style={styles.comingSoonList}>
+            {/* Feature 1: PYQ Hub */}
+            <TouchableOpacity
+              style={[styles.comingSoonItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                Alert.alert(
+                  language === 'hi' ? '📄 10+ वर्ष के हल प्रश्न-पत्र (PYQ Hub)' : '📄 10+ Years Solved PYQ Hub',
+                  language === 'hi'
+                    ? 'KVS, NVS, DSSSB, RSMSSB व UGC-NET के विगत वर्षों के प्रामाणिक मूल प्रश्न-पत्रों का आधिकारिक संकलन Version 2.0 में आ रहा है!\n\nतब तक Version 1.0 में उपलब्ध 70+ टॉपिक क्विज़ व 725+ वन-लाइनर से अपनी तैयारी मजबूत करें।'
+                    : 'Official previous year question papers from KVS, NVS, DSSSB & UGC-NET with verified explanations will be released in Version 2.0!\n\nMeanwhile, master the 70+ topic quizzes and 725+ one-liners available now in Version 1.0.'
+                )
+              }
+            >
+              <View style={[styles.comingSoonIconBox, { backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED' }]}>
+                <Ionicons name="document-text" size={18} color="#EA580C" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.comingSoonItemTitle, { color: colors.textPrimary }]}>
+                    {language === 'hi' ? '10+ वर्ष के हल प्रश्न-पत्र (PYQ Hub)' : 'Previous Year Papers (PYQ Hub)'}
+                  </Text>
+                  <View style={styles.soonPill}>
+                    <Text style={styles.soonPillText}>V2.0</Text>
+                  </View>
+                </View>
+                <Text style={[styles.comingSoonItemDesc, { color: colors.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'KVS, NVS, DSSSB, EMRS व UGC-NET के प्रामाणिक मूल प्रश्न विस्तृत हिंदी व्याख्या सहित।'
+                    : 'Authentic exam papers from KVS, NVS, DSSSB & UGC-NET with verified solutions.'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Feature 2: Full CBT Mock Tests */}
+            <TouchableOpacity
+              style={[styles.comingSoonItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                Alert.alert(
+                  language === 'hi' ? '🏆 ऑल-बिहार CBT फुल मॉक टेस्ट' : '🏆 All-Bihar Full CBT Mocks',
+                  language === 'hi'
+                    ? 'परीक्षा हॉल जैसा 100-प्रश्न CBT टेस्ट, 1/4th नेगेटिव मार्किंग और राज्य स्तरीय मेधा सूची (All-Bihar Rank) आधिकारिक BSEB परीक्षा तिथि घोषित होते ही Version 2.0 में लाइव होगा!'
+                    : 'Full 100-question timed mocks with negative marking and state-wide percentile ranking will go live in Version 2.0 upon official BSEB exam notification!'
+                )
+              }
+            >
+              <View style={[styles.comingSoonIconBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5' }]}>
+                <Ionicons name="trophy" size={18} color="#10B981" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.comingSoonItemTitle, { color: colors.textPrimary }]}>
+                    {language === 'hi' ? 'ऑल-बिहार CBT फुल मॉक टेस्ट' : 'All-Bihar Full CBT Mocks'}
+                  </Text>
+                  <View style={styles.soonPill}>
+                    <Text style={styles.soonPillText}>V2.0</Text>
+                  </View>
+                </View>
+                <Text style={[styles.comingSoonItemDesc, { color: colors.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'परीक्षा हॉल जैसा CBT टेस्ट, 1/4th नेगेटिव मार्किंग और राज्य स्तरीय मेधा सूची।'
+                    : 'Full-length timed CBT mock tests with negative marking & state ranking.'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Feature 3: Full 1500+ MCQ Master Bank */}
+            <TouchableOpacity
+              style={[styles.comingSoonItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                Alert.alert(
+                  language === 'hi' ? '🎯 1500+ विषयवार संपूर्ण MCQ बैंक' : '🎯 1500+ Topic-Wise MCQ Bank',
+                  language === 'hi'
+                    ? 'यूनिट 1 से 5 के प्रत्येक सूक्ष्म विषय (DDC वर्गीकरण, AACR-2 प्रविष्टियां, Koha, RFID, अधिनियम) पर 1500+ अभ्यास प्रश्न!\n\nहर प्रश्न के साथ प्रामाणिक संदर्भ व्याख्या मिलेगी।'
+                    : 'Deep practice question bank covering 1500+ questions across all 5 syllabus units releasing in Version 2.0!'
+                )
+              }
+            >
+              <View style={[styles.comingSoonIconBox, { backgroundColor: isDark ? 'rgba(0, 112, 243, 0.15)' : '#EFF6FF' }]}>
+                <Ionicons name="layers" size={18} color="#0070F3" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.comingSoonItemTitle, { color: colors.textPrimary }]}>
+                    {language === 'hi' ? '1500+ विषयवार संपूर्ण MCQ बैंक' : '1500+ Topic-Wise MCQ Bank'}
+                  </Text>
+                  <View style={styles.soonPill}>
+                    <Text style={styles.soonPillText}>V2.0</Text>
+                  </View>
+                </View>
+                <Text style={[styles.comingSoonItemDesc, { color: colors.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'यूनिट 1 से 5 तक के प्रत्येक सब-टॉपिक से 1500+ उच्च-स्तरीय प्रश्न संपूर्ण व्याख्या सहित।'
+                    : '1500+ high-yield MCQs with comprehensive bilingual explanations.'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Feature 4: General Paper 1 Booster (Bihar GK + Art of Teaching) */}
+            <TouchableOpacity
+              style={[styles.comingSoonItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                Alert.alert(
+                  language === 'hi' ? '🎓 सामान्य पेपर (50 अंक बूस्टर)' : '🎓 General Paper 1 (50 Marks)',
+                  language === 'hi'
+                    ? 'BSEB LET परीक्षा के 50 अंक के अनिवार्य सामान्य पेपर की पूरी तैयारी:\n• शिक्षण कला (Art of Teaching)\n• बिहार विशेष सामान्य ज्ञान (Bihar GK)\n• तार्किक क्षमता (Logical Reasoning)\n• सामान्य हिंदी व पर्यावरण\n\nVersion 2.0 में सम्मिलित!'
+                    : 'Complete 50-mark General Paper preparation covering Art of Teaching, Bihar GK, Reasoning & Hindi in Version 2.0!'
+                )
+              }
+            >
+              <View style={[styles.comingSoonIconBox, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#FFFBEB' }]}>
+                <Ionicons name="school" size={18} color="#F59E0B" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.comingSoonItemTitle, { color: colors.textPrimary }]}>
+                    {language === 'hi' ? 'सामान्य पेपर (50 अंक: बिहार GK व शिक्षण कला)' : 'General Paper (50 Marks: Bihar GK)'}
+                  </Text>
+                  <View style={styles.soonPill}>
+                    <Text style={styles.soonPillText}>V2.0</Text>
+                  </View>
+                </View>
+                <Text style={[styles.comingSoonItemDesc, { color: colors.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'बिहार स्पेशल GK, शिक्षण कला (Art of Teaching) व रीज़निंग के 50 अंकों का संपूर्ण कवरेज।'
+                    : '50-mark compulsory paper: Art of Teaching, Bihar GK & Logical Reasoning.'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Feature 5: Printable Master E-Book PDF */}
+            <TouchableOpacity
+              style={[styles.comingSoonItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.7}
+              onPress={() =>
+                Alert.alert(
+                  language === 'hi' ? '📚 प्रिंट-रेडी मास्टर ई-बुक PDF' : '📚 Printable Master E-Book PDF',
+                  language === 'hi'
+                    ? 'सम्पूर्ण 5 यूनिट्स नोट्स, 725+ वन-लाइनर, शब्दावली व 250+ प्रश्नों का 120 पृष्ठों का प्रिंटेबल A4 PDF!\n\nयह PDF आपके मोबाइल में ऑफलाइन सेव होगी जिसे आप किसी भी साइबर कैफे से प्रिंट करा सकते हैं।'
+                    : '120-page A4 print-ready compilation booklet for offline reading & physical printing!'
+                )
+              }
+            >
+              <View style={[styles.comingSoonIconBox, { backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#F5F3FF' }]}>
+                <Ionicons name="book" size={18} color="#7C3AED" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={[styles.comingSoonItemTitle, { color: colors.textPrimary }]}>
+                    {language === 'hi' ? 'प्रिंट-रेडी मास्टर ई-बुक PDF' : 'Printable Master E-Book PDF'}
+                  </Text>
+                  <View style={styles.soonPill}>
+                    <Text style={styles.soonPillText}>V2.0</Text>
+                  </View>
+                </View>
+                <Text style={[styles.comingSoonItemDesc, { color: colors.textSecondary }]}>
+                  {language === 'hi'
+                    ? 'सम्पूर्ण 5 यूनिट्स नोट्स, 725+ वन-लाइनर व 250+ प्रश्नों का 120 पृष्ठों का प्रिंटेबल A4 PDF।'
+                    : '120-page A4 complete revision book bundle for offline printing.'}
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -1134,18 +1497,24 @@ const styles = StyleSheet.create({
   dailyActionRow: {
     marginTop: 8,
   },
+  dailyButtonsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+  },
   checkAnswerPill: {
-    paddingVertical: 12,
+    flex: 1.2,
+    paddingVertical: 11,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
   },
   checkAnswerPillText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
   resetDailyPill: {
+    flex: 1.2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1157,6 +1526,21 @@ const styles = StyleSheet.create({
   resetDailyText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  shareWhatsAppPill: {
+    flex: 1.1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  shareWhatsAppText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#166534',
   },
   bentoHeaderLeft: {
     flexDirection: 'row',
@@ -1527,5 +1911,107 @@ const styles = StyleSheet.create({
   spotlightFooterText: {
     fontSize: 11,
     fontWeight: '800',
+  },
+  comingSoonCard: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 16,
+  },
+  comingSoonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  comingSoonBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(0, 112, 243, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  comingSoonBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0070F3',
+    letterSpacing: 0.5,
+  },
+  comingSoonTag: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  comingSoonTagText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#B45309',
+  },
+  comingSoonTitle: {
+    fontSize: 16,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+  comingSoonSubtitle: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  comingSoonList: {
+    gap: 8,
+    marginBottom: 0,
+  },
+  comingSoonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  comingSoonIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  comingSoonItemTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+  },
+  soonPill: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  soonPillText: {
+    fontSize: 8.5,
+    fontWeight: '800',
+    color: '#0070F3',
+  },
+  comingSoonItemDesc: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    marginTop: 2,
+  },
+  comingSoonFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  comingSoonFooterText: {
+    fontSize: 10.5,
+    fontWeight: '600',
   },
 });

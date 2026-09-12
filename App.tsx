@@ -15,12 +15,16 @@ import { FlashcardsScreen } from './src/screens/FlashcardsScreen';
 import { SyllabusScreen } from './src/screens/SyllabusScreen';
 import { BookmarksScreen } from './src/screens/BookmarksScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { GlossaryScreen } from './src/screens/GlossaryScreen';
 import { ActiveTab, ScreenView, Quiz, UserQuizAttempt, Question } from './src/types';
 import { StorageService } from './src/storage/storageService';
 import { DataService } from './src/services/dataService';
+import { DailyContentService } from './src/services/dailyContentService';
+import { QUIZZES } from './src/data/quizzes';
+import { QUESTIONS } from './src/data/questions';
 
 const MainAppContent: React.FC = () => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const { colors, isDark } = useTheme();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
@@ -55,7 +59,12 @@ const MainAppContent: React.FC = () => {
         setActiveTab('quiz');
         return true;
       }
-      if (activeTab === 'bookmarks' || activeTab === 'syllabus' || activeTab === 'settings') {
+      if (
+        activeTab === 'bookmarks' ||
+        activeTab === 'syllabus' ||
+        activeTab === 'settings' ||
+        activeTab === 'glossary'
+      ) {
         setActiveTab('more');
         return true;
       }
@@ -81,10 +90,32 @@ const MainAppContent: React.FC = () => {
     setBookmarksCount(bookmarks.length);
   };
 
-  const handleStartQuiz = (quizId: string) => {
-    const quiz = allQuizzes.find((item) => item.id === quizId) || allQuizzes[0];
-    setActiveQuiz(quiz);
-    setScreenView('quiz_active');
+  const handleStartQuiz = async (quizId: string) => {
+    let quiz =
+      allQuizzes.find((item) => item.id === quizId) ||
+      QUIZZES.find((item) => item.id === quizId);
+    if (!quiz) {
+      const qz = await DataService.getQuizzes();
+      quiz =
+        qz.find((item) => item.id === quizId) ||
+        QUIZZES.find((item) => item.id === quizId) ||
+        allQuizzes[0] ||
+        qz[0] ||
+        QUIZZES[0];
+    }
+    if (quiz) {
+      if (quiz.id === 'quiz_daily') {
+        const questionPool = allQuestions.length > 0 ? allQuestions : QUESTIONS;
+        const dailyQuestions = DailyContentService.getDailyQuizQuestions(questionPool, 0, 10);
+        quiz = {
+          ...quiz,
+          questionCount: dailyQuestions.length,
+          questionIds: dailyQuestions.map((q) => q.id),
+        };
+      }
+      setActiveQuiz(quiz);
+      setScreenView('quiz_active');
+    }
   };
 
   const handleFinishQuiz = (attempt: UserQuizAttempt) => {
@@ -114,23 +145,35 @@ const MainAppContent: React.FC = () => {
   };
 
   const getActiveQuizQuestions = (): Question[] => {
-    if (!activeQuiz) return allQuestions;
-    const questions = allQuestions.filter((q) => activeQuiz.questionIds.includes(q.id));
+    const questionPool = allQuestions.length > 0 ? allQuestions : QUESTIONS;
+    if (!activeQuiz) return questionPool;
+
+    if (activeQuiz.id === 'quiz_daily') {
+      return DailyContentService.getDailyQuizQuestions(questionPool, 0, 10);
+    }
+
+    const questions = questionPool.filter((q) => activeQuiz.questionIds?.includes(q.id));
     if (questions.length > 0) return questions;
 
-    // Smart fallback for topic quizzes based on unit ID
+    // Smart fallback for topic quizzes based on category or unit ID
     let matchingCat: Question['category'] = 'lis_foundations';
-    if (activeQuiz.id.includes('_u2_')) matchingCat = 'classification_cataloguing';
+    if (activeQuiz.category === 'classification') matchingCat = 'classification_cataloguing';
+    else if (activeQuiz.category === 'reference') matchingCat = 'reference_sources';
+    else if (activeQuiz.category === 'management') matchingCat = 'management';
+    else if (activeQuiz.category === 'automation') matchingCat = 'automation_ict';
+    else if (activeQuiz.category === 'bihar_gk') matchingCat = 'bihar_gk';
+    else if (activeQuiz.category === 'teaching') matchingCat = 'teaching_aptitude';
+    else if (activeQuiz.id.includes('_u2_')) matchingCat = 'classification_cataloguing';
     else if (activeQuiz.id.includes('_u3_')) matchingCat = 'reference_sources';
     else if (activeQuiz.id.includes('_u4_')) matchingCat = 'management';
     else if (activeQuiz.id.includes('_u5_t5')) matchingCat = 'teaching_aptitude';
     else if (activeQuiz.id.includes('_u5_')) matchingCat = 'automation_ict';
     else if (activeQuiz.id.includes('_u1_t5')) matchingCat = 'bihar_gk';
 
-    const catQuestions = allQuestions.filter((q) => q.category === matchingCat);
+    const catQuestions = questionPool.filter((q) => q.category === matchingCat);
     return catQuestions.length > 0
       ? catQuestions
-      : allQuestions.slice(0, activeQuiz.questionCount || 5);
+      : questionPool.slice(0, activeQuiz.questionCount || 5);
   };
 
   const handleNavigateTab = (tab: ActiveTab) => {
@@ -174,6 +217,8 @@ const MainAppContent: React.FC = () => {
         return <BookmarksScreen />;
       case 'syllabus':
         return <SyllabusScreen />;
+      case 'glossary':
+        return <GlossaryScreen onBack={() => setActiveTab('more')} />;
       default:
         return (
           <HomeScreen
@@ -198,6 +243,8 @@ const MainAppContent: React.FC = () => {
         return t.tabNotes;
       case 'flashcards':
         return t.tabCards;
+      case 'glossary':
+        return t.tabGlossary || (language === 'hi' ? 'LIS शब्दावली व वर्ष' : 'LIS Quick Glossary');
       case 'more':
         return t.moreMenuTitle;
       case 'bookmarks':
@@ -212,7 +259,12 @@ const MainAppContent: React.FC = () => {
   };
 
   const handleHeaderBack = () => {
-    if (activeTab === 'bookmarks' || activeTab === 'syllabus' || activeTab === 'settings') {
+    if (
+      activeTab === 'bookmarks' ||
+      activeTab === 'syllabus' ||
+      activeTab === 'settings' ||
+      activeTab === 'glossary'
+    ) {
       setActiveTab('more');
     } else {
       setActiveTab('home');

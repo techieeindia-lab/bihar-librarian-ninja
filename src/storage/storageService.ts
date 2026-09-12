@@ -8,6 +8,7 @@ const FLASHCARD_MASTERED_KEY = '@bihar_lib_flashcard_mastered';
 const ATTEMPTS_KEY = '@bihar_lib_quiz_attempts';
 const LEGACY_ATTEMPTS_KEY = '@bihar_lib_test_attempts';
 const STREAK_KEY = '@bihar_lib_streak_data';
+const MISTAKES_KEY = '@bihar_lib_mistake_questions';
 
 export interface StreakData {
   lastActiveDate: string;
@@ -46,6 +47,55 @@ export const StorageService = {
     } catch (e) {
       return false;
     }
+  },
+
+  // Mistake Notebook / Incorrect Questions Tracking
+  getMistakes: async (): Promise<string[]> => {
+    try {
+      const data = await AsyncStorage.getItem(MISTAKES_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  recordMistakesFromAttempt: async (
+    userAnswers: Record<string, 'A' | 'B' | 'C' | 'D' | null>,
+    correctAnswersMap: Record<string, 'A' | 'B' | 'C' | 'D'>
+  ): Promise<void> => {
+    try {
+      const current = await StorageService.getMistakes();
+      const mistakeSet = new Set(current);
+
+      Object.entries(userAnswers).forEach(([qId, userAns]) => {
+        if (!userAns) return;
+        const correct = correctAnswersMap[qId];
+        if (correct) {
+          if (userAns !== correct) {
+            mistakeSet.add(qId);
+          } else {
+            // If answered correctly now, clear it from mistakes list
+            mistakeSet.delete(qId);
+          }
+        }
+      });
+
+      await AsyncStorage.setItem(MISTAKES_KEY, JSON.stringify(Array.from(mistakeSet)));
+    } catch (e) {}
+  },
+
+  removeMistake: async (questionId: string): Promise<void> => {
+    try {
+      const current = await StorageService.getMistakes();
+      const updated = current.filter((id) => id !== questionId);
+      await AsyncStorage.setItem(MISTAKES_KEY, JSON.stringify(updated));
+    } catch (e) {}
+  },
+
+  clearAllMistakes: async (): Promise<void> => {
+    try {
+      await AsyncStorage.removeItem(MISTAKES_KEY);
+    } catch (e) {}
   },
 
   // One-Liner Bookmarks
@@ -209,7 +259,18 @@ export const StorageService = {
   // Daily Streak
   updateStreak: async (): Promise<number> => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+
+      const yesterdayDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const yYear = yesterdayDate.getFullYear();
+      const yMonth = String(yesterdayDate.getMonth() + 1).padStart(2, '0');
+      const yDay = String(yesterdayDate.getDate()).padStart(2, '0');
+      const yesterday = `${yYear}-${yMonth}-${yDay}`;
+
       const data = await AsyncStorage.getItem(STREAK_KEY);
       let streakData: StreakData = data ? JSON.parse(data) : { lastActiveDate: '', currentStreak: 0 };
 
@@ -217,9 +278,8 @@ export const StorageService = {
         return streakData.currentStreak || 1;
       }
 
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
       if (streakData.lastActiveDate === yesterday) {
-        streakData.currentStreak += 1;
+        streakData.currentStreak = (streakData.currentStreak || 0) + 1;
       } else {
         streakData.currentStreak = 1;
       }
@@ -227,6 +287,17 @@ export const StorageService = {
 
       await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(streakData));
       return streakData.currentStreak;
+    } catch (e) {
+      return 1;
+    }
+  },
+
+  getStreak: async (): Promise<number> => {
+    try {
+      const data = await AsyncStorage.getItem(STREAK_KEY);
+      if (!data) return 1;
+      const parsed: StreakData = JSON.parse(data);
+      return parsed.currentStreak || 1;
     } catch (e) {
       return 1;
     }

@@ -198,7 +198,9 @@ export const QuizActiveScreen: React.FC<QuizActiveScreenProps> = ({
     let correctCount = 0;
     let wrongCount = 0;
 
+    const correctAnswersMap: Record<string, 'A' | 'B' | 'C' | 'D'> = {};
     questions.forEach((q) => {
+      correctAnswersMap[q.id] = q.correctAnswer;
       const ans = userAnswers[q.id];
       if (ans === q.correctAnswer) {
         correctCount += 1;
@@ -224,6 +226,7 @@ export const QuizActiveScreen: React.FC<QuizActiveScreenProps> = ({
     };
 
     await StorageService.saveQuizAttempt(attempt);
+    await StorageService.recordMistakesFromAttempt(userAnswers, correctAnswersMap);
     onFinishQuiz(attempt);
   };
 
