@@ -1,7 +1,9 @@
 # 🚀 Bihar Librarian Ninja: Play Store ASO & Marketing Quick Wins Kit (2026)
 
 > **App Name**: Bihar Librarian Ninja  
+> **Developer / Studio**: Ninja Exam Studio  
 > **Package ID**: `com.biharlibrarian.examninja`  
+> **Support Email**: `ninjaexamstudio@outlook.com`  
 > **Target Audience**: Candidates appearing for Bihar School Librarian Recruitment 2026 (BSEB LET - Librarian Eligibility Test & BPSC School Librarian Examination).  
 > **Target Region**: Bihar & Hindi belt (Patna, Gaya, Muzaffarpur, Darbhanga, Bhagalpur, Purnia, Saharsa, Ara, Chhapra, etc.).  
 > **Category**: Education / Exam Preparation  

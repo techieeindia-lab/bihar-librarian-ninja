@@ -714,6 +714,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         <View style={styles.infoRow}>
+          <Ionicons name="heart" size={18} color="#EF4444" />
+          <Text style={[styles.infoText, { color: colors.textSecondary, fontWeight: '600' }]}>
+            {language === 'hi'
+              ? 'Ninja Exam Studio द्वारा ❤️ से निर्मित'
+              : 'Crafted with ❤️ by Ninja Exam Studio'}
+          </Text>
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        <View style={styles.infoRow}>
           <Ionicons name="cloud-offline-outline" size={18} color="#10B981" />
           <Text style={[styles.infoText, { color: '#10B981', fontWeight: '700' }]}>
             {t.offlineModeNotice}
