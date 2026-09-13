@@ -281,12 +281,6 @@ Download *Bihar Librarian Ninja* for explanations and practice:
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               {t.quickStatsTitle}
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 7, paddingVertical: 2.5, borderRadius: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
-              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981', marginRight: 4 }} />
-              <Text style={{ fontSize: 9.5, fontWeight: '700', color: '#10B981' }}>
-                Supabase Live
-              </Text>
-            </View>
           </View>
           <View
             style={[

@@ -589,21 +589,6 @@ export const NotesScreen: React.FC<NotesScreenProps> = ({
                 : 'Curated theory, core acts, and key revision facts across all units'}
             </Text>
           </View>
-
-          <View
-            style={[
-              styles.liveBadge,
-              {
-                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
-                borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
-              },
-            ]}
-          >
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>
-              {isLoading ? 'Syncing...' : 'Cloud Synced'}
-            </Text>
-          </View>
         </View>
 
         {/* Search Bar for Concepts */}

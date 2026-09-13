@@ -251,17 +251,9 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onStartQuiz }) => {
     >
       {/* Title & Subtitle */}
       <View style={styles.headerBox}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-          <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>
-            {t.quizScreenTitle}
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981', marginRight: 5 }} />
-            <Text style={{ fontSize: 10, fontWeight: '700', color: '#10B981' }}>
-              {isLoading ? 'Syncing...' : 'Supabase Live'}
-            </Text>
-          </View>
-        </View>
+        <Text style={[styles.screenTitle, { color: colors.textPrimary, marginBottom: 4 }]}>
+          {t.quizScreenTitle}
+        </Text>
         <Text style={[styles.screenSubtitle, { color: colors.textSecondary }]}>
           {t.quizScreenSubtitle}
         </Text>
@@ -519,7 +511,7 @@ export const QuizScreen: React.FC<QuizScreenProps> = ({ onStartQuiz }) => {
           <View style={{ padding: 32, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={{ marginTop: 12, fontSize: 13, color: colors.textSecondary, fontWeight: '600' }}>
-              {language === 'hi' ? 'सुपाबेस डेटाबेस से क्विज़ लोड हो रहे हैं...' : 'Loading Quizzes from Supabase Database...'}
+              {language === 'hi' ? 'परीक्षा क्विज़ लोड हो रहे हैं...' : 'Loading Quizzes...'}
             </Text>
           </View>
         ) : filterType === 'topics' ? (

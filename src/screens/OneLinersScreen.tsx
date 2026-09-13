@@ -309,25 +309,17 @@ export const OneLinersScreen: React.FC = () => {
                 : 'High-yield exam facts divided across all 29 master topics in 5 Core Units'}
             </Text>
           </View>
-          <View style={{ alignItems: 'flex-end', gap: 4 }}>
-            <View
-              style={[
-                styles.factCountBadge,
-                {
-                  backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
-                  borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FFEDD5',
-                },
-              ]}
-            >
-              <Ionicons name="flash" size={12} color="#EA580C" />
-              <Text style={styles.factCountText}>{oneLiners.length} Facts</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
-              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#10B981', marginRight: 4 }} />
-              <Text style={{ fontSize: 9, fontWeight: '700', color: '#10B981' }}>
-                {isLoading ? 'Syncing...' : 'Supabase Live'}
-              </Text>
-            </View>
+          <View
+            style={[
+              styles.factCountBadge,
+              {
+                backgroundColor: isDark ? 'rgba(234, 88, 12, 0.15)' : '#FFF7ED',
+                borderColor: isDark ? 'rgba(234, 88, 12, 0.3)' : '#FFEDD5',
+              },
+            ]}
+          >
+            <Ionicons name="flash" size={12} color="#EA580C" />
+            <Text style={styles.factCountText}>{oneLiners.length} Facts</Text>
           </View>
         </View>
 
@@ -503,7 +495,7 @@ export const OneLinersScreen: React.FC = () => {
             <View style={{ padding: 36, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={{ marginTop: 12, fontSize: 13, color: colors.textSecondary, fontWeight: '600' }}>
-                {language === 'hi' ? 'सुपाबेस डेटाबेस से वन-लाइनर्स लोड हो रहे हैं...' : 'Loading One-Liners from Supabase Database...'}
+                {language === 'hi' ? 'रैपिड वन-लाइनर लोड हो रहे हैं...' : 'Loading One-Liners...'}
               </Text>
             </View>
           ) : (

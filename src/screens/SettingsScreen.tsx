@@ -33,9 +33,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
+  // Admin & Developer Tools (Hidden from students by default)
+  const [showAdminDevTools, setShowAdminDevTools] = useState(false);
+  const [versionTapCount, setVersionTapCount] = useState(0);
+
   useEffect(() => {
-    checkDb();
-  }, []);
+    if (showAdminDevTools) {
+      checkDb();
+    }
+  }, [showAdminDevTools]);
+
+  const handleVersionTap = () => {
+    const nextCount = versionTapCount + 1;
+    if (nextCount >= 7) {
+      setVersionTapCount(0);
+      const nextState = !showAdminDevTools;
+      setShowAdminDevTools(nextState);
+      Alert.alert(
+        nextState ? 'Admin Tools Unlocked' : 'Admin Tools Hidden',
+        nextState
+          ? 'Developer database diagnostics and cloud sync controls are now visible.'
+          : 'Database diagnostics are now hidden from view.'
+      );
+      if (nextState && !dbInfo) {
+        checkDb();
+      }
+    } else {
+      setVersionTapCount(nextCount);
+    }
+  };
 
   const checkDb = async () => {
     setIsCheckingDb(true);
@@ -453,107 +479,110 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </View>
       </View>
 
-      {/* Supabase Cloud Database & Live Sync Monitor */}
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="cloud-done" size={18} color="#10B981" />
-            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-              {language === 'hi' ? 'सुपाबेस क्लाउड डेटाबेस' : 'Supabase Cloud DB'}
-            </Text>
+      {/* Supabase Cloud Database & Live Sync Monitor (Admin Only) */}
+      {showAdminDevTools && (
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: '#10B981',
+              borderWidth: 1.5,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="shield-checkmark" size={18} color="#10B981" />
+              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+                {language === 'hi' ? 'एडमिन / क्लाउड डेटाबेस मॉनिटर' : 'Admin Cloud DB Monitor'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: dbInfo?.connected ? '#10B981' : '#F59E0B', marginRight: 5 }} />
+              <Text style={{ fontSize: 10, fontWeight: '700', color: dbInfo?.connected ? '#10B981' : '#F59E0B' }}>
+                {isCheckingDb ? 'Checking...' : dbInfo?.connected ? 'Live Connected' : 'Offline Mode'}
+              </Text>
+            </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0' }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: dbInfo?.connected ? '#10B981' : '#F59E0B', marginRight: 5 }} />
-            <Text style={{ fontSize: 10, fontWeight: '700', color: dbInfo?.connected ? '#10B981' : '#F59E0B' }}>
-              {isCheckingDb ? 'Checking...' : dbInfo?.connected ? 'Live Connected' : 'Offline Mode'}
-            </Text>
+
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10 }}>
+            {language === 'hi'
+              ? 'एडमिन पैनल: ऐप का सारा कंटेंट (क्विज़, वन-लाइनर, नोट्स) सुपाबेस से सिंक होता है।'
+              : 'Admin panel: Remote tables status & real-time sync control.'}
+          </Text>
+
+          {/* Database Live Stats Grid */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+            <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'रैपिड क्विज़' : 'Rapid Quizzes'}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+                {dbInfo?.counts.quizzes ?? '...'} {language === 'hi' ? 'क्विज़' : 'items'}
+              </Text>
+            </View>
+            <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'वन-लाइनर तथ्य' : 'One-Liners'}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+                {dbInfo?.counts.oneLiners ?? '...'} {language === 'hi' ? 'तथ्य' : 'facts'}
+              </Text>
+            </View>
+            <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'अध्ययन यूनिट्स' : 'Study Units'}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+                {dbInfo?.counts.units ?? '...'} {language === 'hi' ? 'यूनिट' : 'units'}
+              </Text>
+            </View>
+            <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'फ्लैशकार्ड्स' : 'Flashcards'}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
+                {dbInfo?.counts.flashcards ?? '...'} {language === 'hi' ? 'कार्ड्स' : 'cards'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Sync Feedback Message */}
+          {syncMessage && (
+            <View style={{ padding: 8, backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#A7F3D0' }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: '#10B981' }}>{syncMessage}</Text>
+            </View>
+          )}
+
+          {/* Buttons Row */}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8 }}
+              onPress={handleSyncNow}
+              disabled={isSyncing}
+              activeOpacity={0.8}
+            >
+              {isSyncing ? (
+                <ActivityIndicator size="small" color={colors.textOnPrimary} />
+              ) : (
+                <Ionicons name="cloud-download-outline" size={15} color={colors.textOnPrimary} />
+              )}
+              <Text style={{ color: colors.textOnPrimary, fontSize: 12, fontWeight: '700' }}>
+                {isSyncing ? (language === 'hi' ? 'सिंक हो रहा है...' : 'Syncing...') : (language === 'hi' ? 'डेटाबेस से री-सिंक करें' : 'Sync From Cloud DB')}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.canvasSubtle, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
+              onPress={checkDb}
+              disabled={isCheckingDb}
+              activeOpacity={0.8}
+            >
+              {isCheckingDb ? (
+                <ActivityIndicator size="small" color={colors.textPrimary} />
+              ) : (
+                <Ionicons name="pulse-outline" size={15} color={colors.textPrimary} />
+              )}
+              <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '600' }}>
+                {language === 'hi' ? 'जांचें' : 'Test Ping'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 10 }}>
-          {language === 'hi'
-            ? 'ऐप का सारा कंटेंट (क्विज़, वन-लाइनर, नोट्स, प्रश्न) सीधे सुपाबेस डेटाबेस से सिंक होता है।'
-            : 'All quizzes, one-liners, study notes & questions sync directly from Supabase.'}
-        </Text>
-
-        {/* Database Live Stats Grid */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'रैपिड क्विज़' : 'Rapid Quizzes'}</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
-              {dbInfo?.counts.quizzes ?? '...'} {language === 'hi' ? 'क्विज़' : 'items'}
-            </Text>
-          </View>
-          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'वन-लाइनर तथ्य' : 'One-Liners'}</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
-              {dbInfo?.counts.oneLiners ?? '...'} {language === 'hi' ? 'तथ्य' : 'facts'}
-            </Text>
-          </View>
-          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'अध्ययन यूनिट्स' : 'Study Units'}</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
-              {dbInfo?.counts.units ?? '...'} {language === 'hi' ? 'यूनिट' : 'units'}
-            </Text>
-          </View>
-          <View style={{ flex: 1, minWidth: '45%', backgroundColor: colors.canvasSubtle, padding: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
-            <Text style={{ fontSize: 10, color: colors.textMuted }}>{language === 'hi' ? 'फ्लैशकार्ड्स' : 'Flashcards'}</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.textPrimary }}>
-              {dbInfo?.counts.flashcards ?? '...'} {language === 'hi' ? 'कार्ड्स' : 'cards'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Sync Feedback Message */}
-        {syncMessage && (
-          <View style={{ padding: 8, backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5', borderRadius: 8, marginBottom: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16, 185, 129, 0.25)' : '#A7F3D0' }}>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#10B981' }}>{syncMessage}</Text>
-          </View>
-        )}
-
-        {/* Buttons Row */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.primary, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8 }}
-            onPress={handleSyncNow}
-            disabled={isSyncing}
-            activeOpacity={0.8}
-          >
-            {isSyncing ? (
-              <ActivityIndicator size="small" color={colors.textOnPrimary} />
-            ) : (
-              <Ionicons name="cloud-download-outline" size={15} color={colors.textOnPrimary} />
-            )}
-            <Text style={{ color: colors.textOnPrimary, fontSize: 12, fontWeight: '700' }}>
-              {isSyncing ? (language === 'hi' ? 'सिंक हो रहा है...' : 'Syncing...') : (language === 'hi' ? 'डेटाबेस से री-सिंक करें' : 'Sync From Cloud DB')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: colors.canvasSubtle, paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}
-            onPress={checkDb}
-            disabled={isCheckingDb}
-            activeOpacity={0.8}
-          >
-            {isCheckingDb ? (
-              <ActivityIndicator size="small" color={colors.textPrimary} />
-            ) : (
-              <Ionicons name="pulse-outline" size={15} color={colors.textPrimary} />
-            )}
-            <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '600' }}>
-              {language === 'hi' ? 'जांचें' : 'Test Ping'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      )}
 
       {/* Mandatory Play Store Government Non-Affiliation Disclaimer */}
       <View
@@ -704,12 +733,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <View style={styles.infoRow}>
+        <TouchableOpacity
+          style={styles.infoRow}
+          onPress={handleVersionTap}
+          activeOpacity={0.8}
+        >
           <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
           <Text style={[styles.infoText, { color: colors.textSecondary }]}>
             {t.playStoreVersion}
           </Text>
-        </View>
+          {showAdminDevTools && (
+            <View style={{ marginLeft: 8, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: '#10B981', borderRadius: 4 }}>
+              <Text style={{ fontSize: 9, color: '#FFF', fontWeight: '800' }}>ADMIN</Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 

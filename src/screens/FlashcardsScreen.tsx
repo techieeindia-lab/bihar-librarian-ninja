@@ -251,25 +251,9 @@ export const FlashcardsScreen: React.FC = () => {
       <View style={styles.headerBox}>
         <View style={styles.titleRow}>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-              <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>
-                {t.flashcardsTitle}
-              </Text>
-              <View
-                style={[
-                  styles.livePill,
-                  {
-                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
-                    borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : '#A7F3D0',
-                  },
-                ]}
-              >
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>
-                  {isLoading ? 'Syncing...' : 'Live'}
-                </Text>
-              </View>
-            </View>
+            <Text style={[styles.screenTitle, { color: colors.textPrimary, marginBottom: 3 }]}>
+              {t.flashcardsTitle}
+            </Text>
             <Text style={[styles.screenSubtitle, { color: colors.textSecondary }]}>
               {language === 'hi'
                 ? '5 यूनिट्स एवं 29 टॉपिक्स अनुसार परीक्षा के मुख्य वर्ष, सिद्धांत व परिभाषाएं'
